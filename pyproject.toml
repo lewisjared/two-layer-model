@@ -1,0 +1,25 @@
+[build-system]
+requires = [
+    'maturin>=1,<2'
+]
+build-backend = 'maturin'
+
+[tool.maturin]
+python-source = "python"
+module-name = "two_layer_model._core"
+bindings = 'pyo3'
+features = ["pyo3/extension-module"]
+
+[project]
+name = "two-layer-model"
+version = "0.1.0"
+description = "Two layer model implemented in Rust"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.6.2",
+]

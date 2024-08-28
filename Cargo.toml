@@ -1,0 +1,17 @@
+[package]
+name = "two-layer-model"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "two_layer_model"
+# "cdylib" is necessary to produce a shared library for Python to import from.
+crate-type = ["cdylib"]
+
+[dependencies]
+
+
+[dependencies.pyo3]
+version = "0.22.2"
+# "abi3-py38" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.8
+features = ["abi3-py38"]
