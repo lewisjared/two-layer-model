@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '**'
+  pull_request: {}
+
+jobs:
+
+  test-python:
+    name: test ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.11'
+          - '3.12'
+          - '3.13'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache rust
+        uses: Swatinem/rust-cache@v2
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+      - name: Set up uv
+          # Install latest uv version using the installer
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install the project
+        # Install dependencies and builds the rust crate
+        run: uv sync --all-extras --dev
+        env:
+          RUST_BACKTRACE: 1
+      - name: Run python tests
+        run: uv run pytest tests
+      - name: Run rust tests
+        run: cargo test --all
