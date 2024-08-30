@@ -4,6 +4,7 @@ mod timeseries;
 extern crate uom;
 
 use crate::timeseries::Timeseries;
+use ndarray::array;
 use ode_solvers::*;
 use pyo3::prelude::*;
 use pyo3::{pyfunction, pymodule};
@@ -18,7 +19,7 @@ type ModelState = Vector3<f32>;
 type Time = f32;
 
 struct TwoLayerModel {
-    erf: Timeseries<f32>,
+    erf: Timeseries,
     lambda0: f32,
     a: f32,
     efficacy: f32,
@@ -32,7 +33,7 @@ impl System<Time, ModelState> for TwoLayerModel {
     fn system(&self, t: Time, y: &ModelState, dy: &mut ModelState) {
         let temperature_surface = y[0];
         let temperature_deep = y[1];
-        let erf = self.erf.at_time(t);
+        let erf = self.erf.at_time(t).unwrap();
 
         let temperature_difference = temperature_surface - temperature_deep;
 
@@ -57,8 +58,8 @@ fn solve_tlm() {
     // Initialise the model
     let model = TwoLayerModel {
         erf: Timeseries::from_values(
-            vec![0.0, 0.0, 2.0, 2.0],
-            vec![1848.0, 1849.0, 1850.0, 1900.0],
+            array![0.0, 0.0, 2.0, 2.0],
+            array![1848.0, 1849.0, 1850.0, 1900.0],
         ),
         lambda0: 0.5,
         a: 0.01,

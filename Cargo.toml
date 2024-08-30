@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 uom = "0.36.0"
 ode_solvers = "0.4.0"
-ndarray = "0.16.1"
+ndarray = "0.15.6"
 ndarray-interp = "0.4.1"
 
 
