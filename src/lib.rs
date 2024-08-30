@@ -1,5 +1,5 @@
 mod model;
-mod timeseries;
+pub mod timeseries;
 
 extern crate uom;
 
@@ -8,7 +8,9 @@ use ndarray::array;
 use ode_solvers::*;
 use pyo3::prelude::*;
 use pyo3::{pyfunction, pymodule};
+use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction};
 
+#[gen_stub_pyfunction]
 #[pyfunction]
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
@@ -53,6 +55,7 @@ impl System<Time, ModelState> for TwoLayerModel {
     }
 }
 
+#[gen_stub_pyfunction]
 #[pyfunction]
 fn solve_tlm() {
     // Initialise the model
@@ -96,6 +99,9 @@ fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solve_tlm, m)?)?;
     Ok(())
 }
+
+// Define a function to gather stub information.
+define_stub_info_gatherer!(stub_info);
 
 #[cfg(test)]
 mod tests {
