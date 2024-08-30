@@ -4,43 +4,34 @@ sources = python/two_layer_model tests
 # using pip install cargo (via maturin via pip) doesn't get the tty handle
 # so doesn't render color without some help
 export CARGO_TERM_COLOR=$(shell (test -t 0 && echo "always") || echo "auto")
-# maturin develop only makes sense inside a virtual env, is otherwise
-# more or less equivalent to pip install -e just a little nicer
-USE_MATURIN = $(shell [ "$$VIRTUAL_ENV" != "" ] && (which maturin))
 
-.PHONY: install
-install:
+.PHONY: virtual-environment
+virtual-environment:
 	uv venv
 	pre-commit install
+	$(MAKE) build-dev
+
 
 .PHONY: build-dev
 build-dev:
 	@rm -f python/two_layer_model/*.so
-ifneq ($(USE_MATURIN),)
-	maturin develop
-else
-	pip install -v -e . --config-settings=build-args='--profile dev'
-endif
+	uv run maturin develop
 
 .PHONY: build-prod
 build-prod:
 	@rm -f python/two_layer_model/*.so
-ifneq ($(USE_MATURIN),)
-	maturin develop --release
-else
-	pip install -v -e .
-endif
+	uv run maturin develop --release
 
 .PHONY: format
 format:
-	ruff check --fix $(sources)
-	ruff format $(sources)
+	uv run ruff check --fix $(sources)
+	uv run ruff format $(sources)
 	cargo fmt
 
 .PHONY: lint-python
 lint-python:
-	ruff check $(sources)
-	ruff format --check $(sources)
+	uv run ruff check $(sources)
+	uv run ruff format --check $(sources)
 
 .PHONY: lint-rust
 lint-rust:
@@ -52,9 +43,16 @@ lint-rust:
 .PHONY: lint
 lint: lint-python lint-rust
 
+.PHONY: test-python
+test-python: build-dev
+	uv run pytest
+
+.PHONY: test-rust
+test-rust:
+	cargo test
+
 .PHONY: test
-test:
-	pytest
+test: test-python test-rust
 
 .PHONY: all
 all: format build-dev lint test
