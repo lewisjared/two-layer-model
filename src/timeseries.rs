@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn interpolator() {
+    fn custom_interpolator() {
         let data = array![1.0, 1.5, 2.0];
         let years = Array::range(2020.0, 2023.0, 1.0);
         let query = 2024.0;

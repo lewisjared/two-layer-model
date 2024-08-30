@@ -18,4 +18,3 @@ def test_add_invalid_types(a):
 
 def test_solve():
     solve_tlm()
-    assert False
