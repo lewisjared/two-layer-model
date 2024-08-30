@@ -26,14 +26,6 @@ impl TimeAxis {
     pub fn contains(&self, value: Time) -> bool {
         self.values.contains(&value)
     }
-
-    pub fn values(&self) -> &Vec<Time> {
-        &self.values
-    }
-
-    pub fn bounds(&self) -> &Vec<Time> {
-        &self.bounds
-    }
 }
 
 pub struct Timeseries<T> {
@@ -41,21 +33,14 @@ pub struct Timeseries<T> {
     name: String,
     // TODO: Should be NDArray
     values: Vec<T>,
-    // TODO: Should be NDArray
-    time_bounds: Vec<Time>,
+    time_axis: TimeAxis,
 }
 
 impl<T> Timeseries<T> {
-    pub fn new() -> Timeseries<T> {
-        Self {
-            name: "".to_string(),
-            values: vec![],
-            time_bounds: vec![],
-        }
-    }
     pub fn at_time(&self, time: Time) -> &T {
         let nearest = self
-            .time_bounds
+            .time_axis
+            .values
             .binary_search_by(|probe| match probe.ge(&time) {
                 true => Ordering::Less,
                 false => Ordering::Greater,
@@ -70,7 +55,23 @@ impl<T> Timeseries<T> {
         Self {
             name: "".to_string(),
             values,
-            time_bounds: time,
+            time_axis: TimeAxis::from_values(time),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_value() {
+        let result = Timeseries::from_values(
+            vec![1, 2, 3, 4, 5],
+            vec![2020.0, 2021.0, 2022.0, 2023.0, 2024.0],
+        );
+        assert_eq!(result.at_time(2020.0), &1);
+        assert_eq!(result.at_time(2020.5), &1);
+        assert_eq!(result.at_time(2021.0), &2);
     }
 }

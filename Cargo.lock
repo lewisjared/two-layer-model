@@ -95,6 +95,19 @@ dependencies = [
 
 [[package]]
 name = "ndarray"
+version = "0.15.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adb12d4e967ec485a5f71c6311fe28158e9d6f4bc4a447b474184d0f91a8fa32"
+dependencies = [
+ "matrixmultiply",
+ "num-complex",
+ "num-integer",
+ "num-traits",
+ "rawpointer",
+]
+
+[[package]]
+name = "ndarray"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "882ed72dce9365842bf196bdeedf5055305f11fc8c03dee7bb0194a6cad34841"
@@ -106,6 +119,17 @@ dependencies = [
  "portable-atomic",
  "portable-atomic-util",
  "rawpointer",
+]
+
+[[package]]
+name = "ndarray-interp"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8158249c71147ce8818363aa76fb7590f4239988265150960132a16cbe0c6fda"
+dependencies = [
+ "ndarray 0.15.6",
+ "num-traits",
+ "thiserror",
 ]
 
 [[package]]
@@ -334,7 +358,8 @@ dependencies = [
 name = "two-layer-model"
 version = "0.1.0"
 dependencies = [
- "ndarray",
+ "ndarray 0.16.1",
+ "ndarray-interp",
  "ode_solvers",
  "pyo3",
  "uom",
