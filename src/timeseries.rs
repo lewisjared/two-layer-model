@@ -73,6 +73,9 @@ impl Timeseries {
     ///
     /// Allows the strategy to be overwritten if needed:
     /// ```rust
+    /// # use ndarray::{array, Array};
+    /// # use ndarray_interp::interp1d::Linear;
+    /// # use two_layer_model::timeseries::Timeseries;
     /// let data = array![1.0, 1.5, 2.0];
     /// let years = Array::range(2020.0, 2023.0, 1.0);
     /// let query = 2024.0;
