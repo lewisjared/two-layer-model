@@ -3,12 +3,12 @@ use ndarray_interp::InterpolateError;
 use numpy::ndarray::prelude::*;
 use numpy::ndarray::{Array, Array1, OwnedRepr};
 use std::iter::zip;
+use std::sync::Arc;
 
-type Time = f32;
+pub type Time = f32;
 
 #[derive(Clone, Debug)]
 pub struct TimeAxis {
-    values: Array1<Time>,
     bounds: Array1<Time>,
 }
 
@@ -23,35 +23,133 @@ fn check_monotonic_increasing(arr: &Array1<Time>) -> bool {
 ///
 /// The time values must be monotonically increasing with
 /// contiguous bounds (i.e. there cannot be any gaps).
+///
+/// The convention used here is that the value represents the start of a time step.
+/// Each time step has a half-open bound that denotes the time period over which that step is
+/// calculated.
+///
+/// Generally, decimal year values are used throughout
 impl TimeAxis {
-    pub fn new(values: Array1<Time>, bounds: Array1<Time>) -> Self {
-        assert_eq!(values.len(), bounds.len() - 1);
-
-        let is_monotonic = check_monotonic_increasing(&values);
+    pub fn new(bounds: Array1<Time>) -> Self {
+        let is_monotonic = check_monotonic_increasing(&bounds);
         assert!(is_monotonic);
 
-        Self { values, bounds }
+        Self { bounds }
     }
 
+    /// Initialise using values
+    ///
+    /// Assumes that the size of the last time step is equal to the size of the previous time step
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use numpy::array;
+    /// use rscm_core::timeseries::TimeAxis;
+    /// let ta = TimeAxis::from_values(array![1.0, 2.0, 3.0]);
+    /// assert_eq!(ta.at_bounds(2).unwrap(), (3.0, 4.0));
+    /// ```
     pub fn from_values(values: Array1<Time>) -> Self {
+        assert!(values.len() > 2);
+        let step = values[values.len() - 1] - values[values.len() - 2];
+
         let mut bounds = Array::zeros(values.len() + 1);
         bounds.slice_mut(s![..values.len()]).assign(&values);
 
-        Self::new(values, bounds)
+        let last_idx = bounds.len() - 1;
+
+        bounds[last_idx] = bounds[last_idx - 1] + step;
+        Self::new(bounds)
     }
 
+    /// Initialise using bounds
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use numpy::array;
+    /// use rscm_core::timeseries::TimeAxis;
+    /// let ta = TimeAxis::from_bounds(array![1.0, 2.0, 3.0, 4.0]);
+    /// assert_eq!(ta.len(), 3);
+    /// ```
     pub fn from_bounds(bounds: Array1<Time>) -> Self {
         assert!(bounds.len() > 1);
-        let values = bounds.slice(s![..bounds.len() - 1]).to_owned();
 
-        Self { values, bounds }
+        Self { bounds }
     }
 
-    pub fn contains(&self, value: &Time) -> bool {
+    pub fn values(&self) -> ArrayView1<Time> {
+        self.bounds.slice(s![0..self.len()])
+    }
+
+    /// Get the last time value
+    pub fn len(&self) -> usize {
+        self.bounds.len() - 1
+    }
+
+    /// Get the number of bounds
+    ///
+    /// This is always 1 larger than the number of values
+    pub fn len_bounds(&self) -> usize {
+        self.bounds.len()
+    }
+
+    /// Get the first time value
+    // TODO: Investigate Time vs &Time
+    pub fn first(&self) -> &Time {
+        self.bounds.first().unwrap()
+    }
+
+    /// Get the last time value
+    pub fn last(&self) -> &Time {
+        self.bounds.get(self.len()).unwrap()
+    }
+
+    /// Get the time value for a step
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use numpy::array;
+    /// use rscm_core::timeseries::TimeAxis;
+    /// let ta = TimeAxis::from_values(array![1.0, 2.0, 3.0]);
+    /// assert_eq!(ta.at(1).unwrap(), 2.0);
+    /// assert_eq!(ta.at(27), None);
+    /// ```
+    pub fn at(&self, index: usize) -> Option<Time> {
+        if index < self.len() {
+            Option::from(self.bounds[index])
+        } else {
+            None
+        }
+    }
+
+    /// Get the bounds for a given index
+    pub fn at_bounds(&self, index: usize) -> Option<(Time, Time)> {
+        if index < self.len() {
+            let bound: (Time, Time) = (self.bounds[index], self.bounds[index + 1]);
+            Option::from(bound)
+        } else {
+            None
+        }
+    }
+
+    /// Check if the axis contains a given value
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use numpy::array;
+    /// use rscm_core::timeseries::TimeAxis;
+    /// let ta = TimeAxis::from_values(array![1.0, 2.0, 3.0]);
+    /// assert!(ta.contains(1.0));
+    /// assert!(!ta.contains(27.0));
+    /// ```
+    pub fn contains(&self, value: Time) -> bool {
         let mut found = false;
 
-        for v in self.values.iter() {
-            if value == v {
+        for v in self.values().iter() {
+            if value == *v {
                 found = true;
                 break;
             }
@@ -67,7 +165,9 @@ pub struct Timeseries {
     units: String,
     // TODO: Make type-agnostic
     values: Array1<f32>,
-    time_axis: TimeAxis,
+    // Using a reference counted time axis to avoid having to maintain multiple clones of the
+    // time axis.
+    time_axis: Arc<TimeAxis>,
 }
 
 impl Timeseries {
@@ -92,7 +192,7 @@ impl Timeseries {
     /// let result = interpolator.interp_scalar(query).unwrap();
     /// # assert_eq!(result, expected);
     pub fn interpolator(&self) -> Interp1DBuilder<OwnedRepr<f32>, OwnedRepr<Time>, Ix1, Linear> {
-        Interp1DBuilder::new(self.values.clone()).x(self.time_axis.values.clone())
+        Interp1DBuilder::new(self.values.clone()).x(self.time_axis.values().to_owned())
     }
 
     /// Get the value at a given time
@@ -105,8 +205,8 @@ impl Timeseries {
         interp.interp_scalar(time)
     }
 
-    pub fn new(values: Array1<f32>, time_axis: TimeAxis, units: String) -> Self {
-        assert_eq!(values.len(), time_axis.values.len());
+    pub fn new(values: Array1<f32>, time_axis: Arc<TimeAxis>, units: String) -> Self {
+        assert_eq!(values.len(), time_axis.values().len());
 
         Self {
             units,
@@ -121,7 +221,7 @@ impl Timeseries {
         Self {
             units: "".to_string(),
             values,
-            time_axis: TimeAxis::from_values(time),
+            time_axis: Arc::new(TimeAxis::from_values(time)),
         }
     }
 }
