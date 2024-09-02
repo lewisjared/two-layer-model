@@ -47,7 +47,8 @@ impl TimeAxis {
     /// use numpy::array;
     /// use rscm_core::timeseries::TimeAxis;
     /// let ta = TimeAxis::from_values(array![1.0, 2.0, 3.0]);
-    /// assert_eq!(ta.at_bounds(2).unwrap(), (3.0, 4.0));
+    /// let expected: (f32, f32) = (3.0, 4.0);
+    /// assert_eq!(ta.at_bounds(2).unwrap(), expected);
     /// ```
     pub fn from_values(values: Array1<Time>) -> Self {
         assert!(values.len() > 2);

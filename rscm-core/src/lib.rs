@@ -1,3 +1,4 @@
+mod component;
 mod model;
 pub mod python;
 pub mod timeseries;

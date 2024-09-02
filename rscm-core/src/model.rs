@@ -1,5 +1,5 @@
 use crate::timeseries::{Time, TimeAxis};
-use crate::timeseries_collection::{TimeseriesCollection, VariableType};
+use crate::timeseries_collection::TimeseriesCollection;
 
 struct Model {
     ts: TimeseriesCollection,
