@@ -49,7 +49,7 @@ test-python: build-dev
 
 .PHONY: test-rust
 test-rust:
-	cargo test
+	cargo test --workspace
 
 .PHONY: test
 test: test-python test-rust

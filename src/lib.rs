@@ -1,27 +1,21 @@
 mod model;
-pub mod timeseries;
+pub mod python;
 
 extern crate uom;
 
-use crate::timeseries::Timeseries;
-use ndarray::array;
+use numpy::ndarray::array;
+use ode_solvers::dop_shared::{IntegrationError, Stats};
 use ode_solvers::*;
-use pyo3::prelude::*;
-use pyo3::{pyfunction, pymodule};
-use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction};
 
-#[gen_stub_pyfunction]
-#[pyfunction]
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+use rscm_core::timeseries::Timeseries;
+use std::sync::Arc;
 
 // Define some types that are used by OdeSolvers
 type ModelState = Vector3<f32>;
 type Time = f32;
 
-struct TwoLayerModel {
-    erf: Timeseries,
+#[derive(Clone)]
+pub struct TwoLayerModelParameters {
     lambda0: f32,
     a: f32,
     efficacy: f32,
@@ -30,58 +24,93 @@ struct TwoLayerModel {
     heat_capacity_deep: f32,
 }
 
+#[derive(Clone)]
+pub struct TwoLayerModelState {
+    erf: Timeseries,
+}
+
+#[derive(Clone)]
+pub struct TwoLayerModel {
+    parameters: Arc<TwoLayerModelParameters>,
+    state: Option<Arc<TwoLayerModelState>>,
+}
+
+impl TwoLayerModel {
+    pub fn new(parameters: Arc<TwoLayerModelParameters>, state: Arc<TwoLayerModelState>) -> Self {
+        Self {
+            parameters,
+            state: Option::from(state),
+        }
+    }
+    pub fn from_parameters(parameters: Arc<TwoLayerModelParameters>) -> Self {
+        Self {
+            parameters,
+            state: None,
+        }
+    }
+
+    fn with_state(mut self, state: Arc<TwoLayerModelState>) -> Self {
+        self.state = Option::from(state);
+        self
+    }
+    fn solve(&self) -> Result<Stats, IntegrationError> {
+        let y0 = ModelState::new(0.0, 0.0, 0.0);
+
+        // Create the solver
+        let mut stepper = Rk4::new(self.clone(), 1848.0, y0, 1900.0, 1.0);
+        stepper.integrate()
+    }
+}
+
 // Create the set of ODEs to represent the two layer model
 impl System<Time, ModelState> for TwoLayerModel {
     fn system(&self, t: Time, y: &ModelState, dy: &mut ModelState) {
         let temperature_surface = y[0];
         let temperature_deep = y[1];
-        let erf = self.erf.at_time(t).unwrap();
+        let erf = self.state.as_ref().unwrap().erf.at_time(t).unwrap();
 
         let temperature_difference = temperature_surface - temperature_deep;
 
-        let lambda_eff = self.lambda0 - self.a * temperature_surface;
-        let heat_exchange_surface = self.efficacy * self.eta * temperature_difference;
+        let lambda_eff = self.parameters.lambda0 - self.parameters.a * temperature_surface;
+        let heat_exchange_surface =
+            self.parameters.efficacy * self.parameters.eta * temperature_difference;
         let dtemperature_surface_dt =
             (erf - lambda_eff * temperature_surface - heat_exchange_surface)
-                / self.heat_capacity_surface;
+                / self.parameters.heat_capacity_surface;
 
-        let heat_exchange_deep = self.eta * temperature_difference;
-        let dtemperature_deep_dt = heat_exchange_deep / self.heat_capacity_deep;
+        let heat_exchange_deep = self.parameters.eta * temperature_difference;
+        let dtemperature_deep_dt = heat_exchange_deep / self.parameters.heat_capacity_deep;
 
         dy[0] = dtemperature_surface_dt;
         dy[1] = dtemperature_deep_dt;
-        dy[2] = self.heat_capacity_surface * dtemperature_surface_dt
-            + self.heat_capacity_deep * dtemperature_deep_dt;
+        dy[2] = self.parameters.heat_capacity_surface * dtemperature_surface_dt
+            + self.parameters.heat_capacity_deep * dtemperature_deep_dt;
     }
 }
 
-#[gen_stub_pyfunction]
-#[pyfunction]
-fn solve_tlm() {
+pub fn solve_tlm() {
     // Initialise the model
-    let model = TwoLayerModel {
-        erf: Timeseries::from_values(
-            array![0.0, 0.0, 2.0, 2.0],
-            array![1848.0, 1849.0, 1850.0, 1900.0],
-        ),
+    let model = TwoLayerModel::from_parameters(Arc::new(TwoLayerModelParameters {
         lambda0: 0.5,
         a: 0.01,
         efficacy: 0.5,
         eta: 0.1,
         heat_capacity_surface: 1.0,
         heat_capacity_deep: 100.0,
-    };
-
-    let y0 = ModelState::new(0.0, 0.0, 0.0);
+    }));
+    let erf = Timeseries::from_values(
+        array![0.0, 0.0, 2.0, 2.0],
+        array![1848.0, 1849.0, 1850.0, 1900.0],
+    );
+    let state = Arc::new(TwoLayerModelState { erf });
 
     // Create the solver
-    let mut stepper = Rk4::new(model, 1848.0, y0, 1900.0, 1.0);
-    let res = stepper.integrate();
+    let res = model.with_state(state).solve();
 
     // Handle result
     match res {
         Ok(stats) => {
-            stats.print();
+            println!("Stats: {}", stats)
 
             // Do something with the output...
             // let path = Path::new("./outputs/kepler_orbit_dopri5.dat");
@@ -91,17 +120,6 @@ fn solve_tlm() {
         Err(_) => println!("An error occured."),
     }
 }
-
-#[pymodule]
-#[pyo3(name = "_core")]
-fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(add, m)?)?;
-    m.add_function(wrap_pyfunction!(solve_tlm, m)?)?;
-    Ok(())
-}
-
-// Define a function to gather stub information.
-define_stub_info_gatherer!(stub_info);
 
 #[cfg(test)]
 mod tests {

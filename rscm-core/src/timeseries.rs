@@ -1,11 +1,12 @@
-use ndarray::prelude::*;
-use ndarray::{Array, OwnedRepr};
 use ndarray_interp::interp1d::{Interp1DBuilder, Linear};
 use ndarray_interp::InterpolateError;
+use numpy::ndarray::prelude::*;
+use numpy::ndarray::{Array, Array1, OwnedRepr};
 use std::iter::zip;
 
 type Time = f32;
 
+#[derive(Clone, Debug)]
 pub struct TimeAxis {
     values: Array1<Time>,
     bounds: Array1<Time>,
@@ -61,6 +62,7 @@ impl TimeAxis {
 
 /// A contiguous set of values
 ///
+#[derive(Clone, Debug)]
 pub struct Timeseries {
     name: String,
     // TODO: Make type-agnostic
@@ -73,9 +75,9 @@ impl Timeseries {
     ///
     /// Allows the strategy to be overwritten if needed:
     /// ```rust
-    /// # use ndarray::{array, Array};
+    /// # use numpy::ndarray::{array, Array};
     /// # use ndarray_interp::interp1d::Linear;
-    /// # use two_layer_model::timeseries::Timeseries;
+    /// # use crate::rscm_core::timeseries::Timeseries;
     /// let data = array![1.0, 1.5, 2.0];
     /// let years = Array::range(2020.0, 2023.0, 1.0);
     /// let query = 2024.0;

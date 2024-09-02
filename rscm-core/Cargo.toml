@@ -1,0 +1,9 @@
+[package]
+name = "rscm-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+numpy = "0.21.0"
+ndarray-interp = "0.4.1"
+pyo3 = "0.21.0"
