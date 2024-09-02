@@ -1,7 +1,7 @@
 use crate::timeseries::{Time, TimeAxis};
 use crate::timeseries_collection::TimeseriesCollection;
 
-struct Model {
+pub struct Model {
     ts: TimeseriesCollection,
     time_axis: TimeAxis,
     time_index: usize,

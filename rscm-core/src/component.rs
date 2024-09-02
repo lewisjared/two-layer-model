@@ -1,40 +1,82 @@
 use crate::timeseries::Time;
 use crate::timeseries_collection::TimeseriesCollection;
 
-pub enum StateDirection {
-    Input,
-    Output,
-}
-
-pub struct State {
-    pub values: Vec<f32>,
-    pub names: Vec<String>,
-    pub direction: StateDirection,
-}
-
-impl State {
-    fn input(values: Vec<f32>, names: Vec<String>) -> Self {
-        Self {
-            values,
-            names,
-            direction: StateDirection::Input,
-        }
-    }
-
-    fn output(values: Vec<f32>, names: Vec<String>) -> Self {
-        Self {
-            values,
-            names,
-            direction: StateDirection::Output,
-        }
-    }
+/// Generic state representation
+///
+/// A state is a collection of values
+/// that can be used to represent the state of a system at a given time.
+///
+/// This is very similar to a Hashmap (with likely worse performance),
+/// but provides strong type separation.
+trait State {
+    fn names(&self) -> &Vec<String>;
+    fn values(&self) -> &Vec<f32>;
 
     fn get(&self, name: &str) -> f32 {
-        let index = self.names.iter().position(|x| x == name).unwrap();
-        self.values[index]
+        let index = self.names().iter().position(|x| x == name).unwrap();
+        *self.values().get(index).unwrap()
     }
 }
 
+#[derive(Debug)]
+pub struct InputState {
+    values: Vec<f32>,
+    names: Vec<String>,
+}
+
+impl InputState {
+    fn new(values: Vec<f32>, names: Vec<String>) -> Self {
+        assert_eq!(values.len(), names.len());
+        Self { values, names }
+    }
+}
+impl State for InputState {
+    fn names(&self) -> &Vec<String> {
+        &self.names
+    }
+
+    fn values(&self) -> &Vec<f32> {
+        &self.values
+    }
+}
+
+#[derive(Debug)]
+pub struct OutputState {
+    values: Vec<f32>,
+    names: Vec<String>,
+}
+
+impl OutputState {
+    fn new(values: Vec<f32>, names: Vec<String>) -> Self {
+        assert_eq!(values.len(), names.len());
+        Self { values, names }
+    }
+}
+
+impl State for OutputState {
+    fn names(&self) -> &Vec<String> {
+        &self.names
+    }
+
+    fn values(&self) -> &Vec<f32> {
+        &self.values
+    }
+}
+
+/// Component of a reduced complexity climate model
+///
+/// Each component encapsulates some set of physics that can be solved for a given time step.
+/// Generally these components can be modelled as a set of Ordinary Differential Equations (ODEs)
+/// with an input state that can be solved as an initial value problem over a given time domain.
+///
+/// The resulting state of a component can then be used by other components as part of a `Model`
+/// or solved alone during calibration.
+///
+/// Each component contains:
+/// * parameters: Time invariant constants used to parameterize the components physics
+/// * inputs: State information required to solve the model. This come from either other
+/// components as part of a coupled system or from exogenous data.
+/// * outputs: Information that is solved by the component
 pub trait Component<Parameters> {
     fn from_parameters(parameters: Parameters) -> Self;
 
@@ -49,25 +91,32 @@ pub trait Component<Parameters> {
     /// for example, 'Emissions|CO2' and 'Atmospheric Concentrations|CO2'
     fn outputs() -> Vec<String>;
 
-    /// Extract the state for the current time step
+    /// Extract the input state for the current time step
     ///
     /// The result should contain values for the current time step for all input variable
-    fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> State;
+    fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState;
 
     /// Solve the component until `t_next`
     ///
     /// The result should contain values for the current time step for all output variables
-    fn solve(&self, t_current: Time, t_next: Time, input_state: State) -> Result<State, String>;
+    fn solve(
+        &self,
+        t_current: Time,
+        t_next: Time,
+        input_state: InputState,
+    ) -> Result<OutputState, String>;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    #[derive(Debug)]
     struct TestComponentParameters {
         p: f32,
     }
 
+    #[derive(Debug)]
     struct TestComponent {
         parameters: TestComponentParameters,
     }
@@ -84,18 +133,24 @@ mod tests {
         fn outputs() -> Vec<String> {
             vec!["Concentrations|CO2".to_string()]
         }
-        fn extract_state(&self, _collection: &TimeseriesCollection, _t_current: Time) -> State {
-            State::input(vec![1.3], TestComponent::inputs())
+        fn extract_state(
+            &self,
+            _collection: &TimeseriesCollection,
+            _t_current: Time,
+        ) -> InputState {
+            InputState::new(vec![1.3], TestComponent::inputs())
         }
         fn solve(
             &self,
-            t_current: Time,
-            t_next: Time,
-            input_state: State,
-        ) -> Result<State, String> {
+            _t_current: Time,
+            _t_next: Time,
+            input_state: InputState,
+        ) -> Result<OutputState, String> {
             let emission_co2 = input_state.get("Emissions|CO2");
 
-            Ok(State::output(
+            println!("Solving {:?} with state: {:?}", self, input_state);
+
+            Ok(OutputState::new(
                 vec![emission_co2 * self.parameters.p],
                 TestComponent::outputs(),
             ))
@@ -103,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn step() {
+    fn solve() {
         let component = TestComponent::from_parameters(TestComponentParameters { p: 2.0 });
 
         let input_state = component.extract_state(&TimeseriesCollection::new(), 2020.0);
