@@ -18,7 +18,6 @@ pub struct TimeseriesItem {
 /// A collection of time series data.
 /// Allows for easy access to time series data by name across the whole model
 pub struct TimeseriesCollection {
-    // TODO: Optimise this data structure to be able to do constant time lookups
     timeseries: HashMap<String, TimeseriesItem>,
 }
 

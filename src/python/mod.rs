@@ -1,7 +1,6 @@
 use crate::{solve_tlm, TwoLayerModel, TwoLayerModelParameters};
 use pyo3::prelude::*;
 use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction};
-use rscm_core::python::timeseries::PyTimeseries;
 use std::sync::Arc;
 
 #[gen_stub_pyfunction]

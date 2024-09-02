@@ -53,6 +53,7 @@ mod tests {
         model.step();
         model.step();
         assert_eq!(model.time_index, 2);
+        assert_eq!(model.current_time(), 2022.0);
         model.run();
         assert_eq!(model.time_index, 5);
     }
