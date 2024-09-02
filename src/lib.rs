@@ -1,4 +1,3 @@
-mod model;
 pub mod python;
 
 extern crate uom;

@@ -64,7 +64,7 @@ impl TimeAxis {
 ///
 #[derive(Clone, Debug)]
 pub struct Timeseries {
-    name: String,
+    units: String,
     // TODO: Make type-agnostic
     values: Array1<f32>,
     time_axis: TimeAxis,
@@ -105,11 +105,21 @@ impl Timeseries {
         interp.interp_scalar(time)
     }
 
+    pub fn new(values: Array1<f32>, time_axis: TimeAxis, units: String) -> Self {
+        assert_eq!(values.len(), time_axis.values.len());
+
+        Self {
+            units,
+            values,
+            time_axis,
+        }
+    }
+
     pub fn from_values(values: Array1<f32>, time: Array1<f32>) -> Self {
         assert_eq!(values.len(), time.len());
 
         Self {
-            name: "".to_string(),
+            units: "".to_string(),
             values,
             time_axis: TimeAxis::from_values(time),
         }

@@ -2,8 +2,19 @@
 name = "rscm-core"
 version = "0.1.0"
 edition = "2021"
+description = "Core traits and functionalities for the creation of reduced-complexity climate models"
+readme = "README.md"
+keywords = ["physics", "scm", "climate"]
+categories = ["science"]
+workspace = ".."
 
 [dependencies]
 numpy = "0.21.0"
 ndarray-interp = "0.4.1"
-pyo3 = "0.21.0"
+
+
+[dependencies.pyo3]
+version = "0.21.0"
+# extension-module builds a python extension module and is required to use `cargo test`
+# "abi3-py38" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.8
+features = ["extension-module", "abi3-py38"]
