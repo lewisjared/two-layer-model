@@ -1,8 +1,9 @@
 use numpy::ndarray::array;
 use ode_solvers::*;
+use std::sync::Arc;
 
 use rscm_core::component::{Component, InputState, OutputState, State};
-use rscm_core::ivp::{IVPSolver, IVP};
+use rscm_core::ivp::{IVPBuilder, IVP};
 use rscm_core::timeseries::{Time, Timeseries};
 use rscm_core::timeseries_collection::{TimeseriesCollection, VariableType};
 
@@ -19,7 +20,7 @@ pub struct TwoLayerModelParameters {
     heat_capacity_deep: f32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TwoLayerComponent {
     parameters: TwoLayerModelParameters,
 }
@@ -90,13 +91,18 @@ impl Component<TwoLayerModelParameters> for TwoLayerComponent {
 
         let y0 = ModelState::new(0.0, 0.0, 0.0);
 
-        let s = Box::new(self.to_owned());
-        let mut solver = IVPSolver::new(Box::new(self.to_owned()), input_state.clone(), y0)
-            .integrate(t_current, t_next, 0.1);
-        let res = solver;
+        let mut solver = IVPBuilder::new(Arc::new(self.to_owned()), input_state.clone(), y0);
+        println!("Solving {:?} with state: {:?}", self, input_state);
+
+        let mut solver = solver.to_rk4(t_current, t_next, 0.1);
+        let stats = solver.integrate().expect("Failed solving");
+
+        let results = solver.results();
+
+        println!("Stats {:?}", stats);
+        println!("Results {:?}", results);
 
         // Create the solver
-        println!("Solving {:?} with state: {:?}", self, input_state);
 
         Ok(OutputState::new(
             vec![erf * self.parameters.lambda0],
@@ -105,7 +111,7 @@ impl Component<TwoLayerModelParameters> for TwoLayerComponent {
     }
 }
 
-pub fn solve_tlm() {
+pub fn solve_tlm() -> Result<OutputState, String> {
     // Initialise the model
     let model = TwoLayerComponent::from_parameters(TwoLayerModelParameters {
         lambda0: 0.5,
@@ -120,7 +126,7 @@ pub fn solve_tlm() {
     ts_collection.add_timeseries(
         "erf".to_string(),
         Timeseries::from_values(
-            array![0.0, 0.0, 2.0, 2.0],
+            array![1.0, 1.5, 2.0, 2.0],
             array![1848.0, 1849.0, 1850.0, 1900.0],
         ),
         VariableType::Endogenous,
@@ -130,15 +136,10 @@ pub fn solve_tlm() {
     println!("Input: {:?}", input_state);
 
     // Create the solver
-    let res = model.solve(1848.0, 1849.0, &input_state);
+    let output_state = model.solve(1848.0, 1849.0, &input_state);
 
-    // Handle result
-    match res {
-        Ok(output_state) => {
-            println!("Output: {:?}", output_state)
-        }
-        Err(_) => println!("An error occured."),
-    }
+    println!("Output: {:?}", output_state);
+    output_state
 }
 
 #[cfg(test)]
@@ -147,6 +148,6 @@ mod tests {
 
     #[test]
     fn it_works() {
-        solve_tlm();
+        let res = solve_tlm().unwrap();
     }
 }

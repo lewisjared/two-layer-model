@@ -1,27 +1,26 @@
-use crate::component::{Component, InputState};
-use crate::timeseries::Time;
+use crate::component::InputState;
 use nalgebra::allocator::Allocator;
 use nalgebra::{DefaultAllocator, Dim};
 use ode_solvers::dop_shared::{FloatNumber, IntegrationError, Stats};
 use ode_solvers::*;
-
-/// this module uses [lifetime elision](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html#lifetime-elision)
-/// which is terribly confusing,
-/// but I couldn't see how to handle correctly handle the lifetime of component in IVPSolver.
-/// I didn't want IVPSolver to take ownership of the component,
-/// but I needed to ensure that the component outlived the IVPSolver.
+use std::sync::Arc;
 
 pub trait IVP<T, S> {
     fn calculate_dy_dt(&self, t: T, input_state: &InputState, y: &S, dy_dt: &mut S);
 }
 
-pub struct IVPSolver<C, S> {
-    component: Box<C>,
+/// Builds a solver for an initial value problem
+#[derive(Clone)]
+pub struct IVPBuilder<C, S> {
+    /// Model component to be solving
+    // This needs to be a box/arc-like data type as the size of C is not known at compile time.
+    component: Arc<C>,
+    /// Initial
     y0: S,
     input_state: InputState,
 }
 
-impl<T, D: Dim, C> System<T, OVector<T, D>> for IVPSolver<C, OVector<T, D>>
+impl<T, D: Dim, C> System<T, OVector<T, D>> for IVPBuilder<C, OVector<T, D>>
 where
     T: FloatNumber,
     C: IVP<T, OVector<T, D>>,
@@ -33,23 +32,28 @@ where
     }
 }
 
-impl<T, D: Dim, C> IVPSolver<C, OVector<T, D>>
+impl<T, D: Dim, C> IVPBuilder<C, OVector<T, D>>
 where
     T: FloatNumber,
     C: IVP<T, OVector<T, D>>,
     OVector<T, D>: std::ops::Mul<T, Output = OVector<T, D>>,
     DefaultAllocator: Allocator<T, D>,
 {
-    pub fn new(component: Box<C>, input_state: InputState, y0: OVector<T, D>) -> Self {
+    pub fn new(component: Arc<C>, input_state: InputState, y0: OVector<T, D>) -> Self {
         Self {
             component,
             y0,
             input_state,
         }
     }
-    pub fn integrate(self, t0: T, t1: T, step: T) -> Result<Stats, IntegrationError> {
+
+    pub fn to_rk4(
+        self,
+        t0: T,
+        t1: T,
+        step: T,
+    ) -> Rk4<T, OVector<T, D>, IVPBuilder<C, OVector<T, D>>> {
         let y0 = self.y0.clone();
-        let mut stepper = Rk4::new(self, t0, y0, t1, step);
-        stepper.integrate()
+        Rk4::new(self, t0, y0, t1, step)
     }
 }
