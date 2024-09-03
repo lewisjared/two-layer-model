@@ -18,7 +18,7 @@ pub trait State {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InputState {
     values: Vec<f32>,
     names: Vec<String>,

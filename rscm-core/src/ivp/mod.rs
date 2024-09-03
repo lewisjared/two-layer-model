@@ -1,9 +1,8 @@
-mod rk4;
-
-
 use crate::component::{Component, InputState};
 use crate::timeseries::Time;
-// use rk4::{Rk4, System};
+use nalgebra::allocator::Allocator;
+use nalgebra::{DefaultAllocator, Dim};
+use ode_solvers::dop_shared::{FloatNumber, IntegrationError, Stats};
 use ode_solvers::*;
 
 /// this module uses [lifetime elision](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html#lifetime-elision)
@@ -12,59 +11,44 @@ use ode_solvers::*;
 /// I didn't want IVPSolver to take ownership of the component,
 /// but I needed to ensure that the component outlived the IVPSolver.
 
-pub trait IVP<ModelState> {
-
-    fn y0(&self) -> ModelState;
-
-    fn calculate_dy_dt(
-        &self,
-        t: Time,
-        input_state: &InputState,
-        y: &ModelState,
-        dy_dt: &mut ModelState,
-    );
-
+pub trait IVP<T, S> {
+    fn calculate_dy_dt(&self, t: T, input_state: &InputState, y: &S, dy_dt: &mut S);
 }
 
-impl<ModelState> System<Time, ModelState> for dyn IVP<ModelState> {
-    fn system(&self, t: Time, y: &ModelState, dy: &mut ModelState) {
-        self.calculate_dy_dt(t, &self.input_state, y, dy)
-    }
-}
-
-
-
-pub struct IVPSolver<'a, T>
-where
-    T: Component<T>,
-{
-    component: &'a T,
+pub struct IVPSolver<C, S> {
+    component: Box<C>,
+    y0: S,
     input_state: InputState,
 }
 
-impl<'a, T, ModelState> System<Time, ModelState> for IVPSolver<'a, T>
+impl<T, D: Dim, C> System<T, OVector<T, D>> for IVPSolver<C, OVector<T, D>>
 where
-    T: Component<T> + IVP<ModelState>,
+    T: FloatNumber,
+    C: IVP<T, OVector<T, D>>,
+    OVector<T, D>: std::ops::Mul<T, Output = OVector<T, D>>,
+    DefaultAllocator: Allocator<T, D>,
 {
-    fn system(&self, t: Time, y: &ModelState, dy: &mut ModelState) {
+    fn system(&self, t: T, y: &OVector<T, D>, dy: &mut OVector<T, D>) {
         self.component.calculate_dy_dt(t, &self.input_state, y, dy)
     }
 }
 
-impl<'a, T, ModelState> IVPSolver<'a, T>
+impl<T, D: Dim, C> IVPSolver<C, OVector<T, D>>
 where
-    T: Component<T> + IVP<ModelState>,
+    T: FloatNumber,
+    C: IVP<T, OVector<T, D>>,
+    OVector<T, D>: std::ops::Mul<T, Output = OVector<T, D>>,
+    DefaultAllocator: Allocator<T, D>,
 {
-    pub fn new(component: &'a T, input_state: InputState) -> Self {
+    pub fn new(component: Box<C>, input_state: InputState, y0: OVector<T, D>) -> Self {
         Self {
             component,
+            y0,
             input_state,
         }
     }
-
-    pub fn integrate(&self, t0: Time, t1: Time, y0: ModelState) -> Result<Stats, IntegrationError> {
-        let solver = Rk4::new(&)
-        let t0 = self.input_state.time();
+    pub fn integrate(self, t0: T, t1: T, step: T) -> Result<Stats, IntegrationError> {
+        let y0 = self.y0.clone();
         let mut stepper = Rk4::new(self, t0, y0, t1, step);
         stepper.integrate()
     }
