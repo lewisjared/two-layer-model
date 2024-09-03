@@ -8,7 +8,7 @@ use crate::timeseries_collection::TimeseriesCollection;
 ///
 /// This is very similar to a Hashmap (with likely worse performance),
 /// but provides strong type separation.
-trait State {
+pub trait State {
     fn names(&self) -> &Vec<String>;
     fn values(&self) -> &Vec<f32>;
 
@@ -25,7 +25,7 @@ pub struct InputState {
 }
 
 impl InputState {
-    fn new(values: Vec<f32>, names: Vec<String>) -> Self {
+    pub fn new(values: Vec<f32>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
         Self { values, names }
     }
@@ -47,7 +47,7 @@ pub struct OutputState {
 }
 
 impl OutputState {
-    fn new(values: Vec<f32>, names: Vec<String>) -> Self {
+    pub fn new(values: Vec<f32>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
         Self { values, names }
     }
@@ -78,10 +78,16 @@ impl State for OutputState {
 /// components as part of a coupled system or from exogenous data.
 /// * outputs: Information that is solved by the component
 pub trait Component<Parameters> {
-    fn from_parameters(parameters: Parameters) -> Self;
+    fn from_parameters(parameters: Parameters) -> Self
+    where
+        // Used to opt out of this method when used as an object trait
+        // See https://doc.rust-lang.org/error_codes/E0038.html
+        Self: Sized;
 
     /// Variables that are required to solve this component
-    fn inputs() -> Vec<String>;
+    fn inputs() -> Vec<String>
+    where
+        Self: Sized;
 
     /// Variables that are solved by this component
     ///
@@ -89,7 +95,9 @@ pub trait Component<Parameters> {
     /// i.e. No two components within a model can produce the same variable names.
     /// These names can contain '|' to namespace variables to avoid collisions,
     /// for example, 'Emissions|CO2' and 'Atmospheric Concentrations|CO2'
-    fn outputs() -> Vec<String>;
+    fn outputs() -> Vec<String>
+    where
+        Self: Sized;
 
     /// Extract the input state for the current time step
     ///
@@ -103,7 +111,7 @@ pub trait Component<Parameters> {
         &self,
         t_current: Time,
         t_next: Time,
-        input_state: InputState,
+        input_state: &InputState,
     ) -> Result<OutputState, String>;
 }
 
@@ -144,7 +152,7 @@ mod tests {
             &self,
             _t_current: Time,
             _t_next: Time,
-            input_state: InputState,
+            input_state: &InputState,
         ) -> Result<OutputState, String> {
             let emission_co2 = input_state.get("Emissions|CO2");
 
@@ -162,7 +170,7 @@ mod tests {
         let component = TestComponent::from_parameters(TestComponentParameters { p: 2.0 });
 
         let input_state = component.extract_state(&TimeseriesCollection::new(), 2020.0);
-        let output_state = component.solve(2020.0, 2021.0, input_state).unwrap();
+        let output_state = component.solve(2020.0, 2021.0, &input_state).unwrap();
 
         assert_eq!(output_state.get("Concentrations|CO2"), 2.0 * 1.3);
     }
