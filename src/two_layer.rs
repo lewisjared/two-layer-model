@@ -1,20 +1,17 @@
-pub mod python;
-mod two_layer;
-
-extern crate uom;
-
 use numpy::ndarray::array;
 use ode_solvers::dop_shared::{IntegrationError, Stats};
 use ode_solvers::*;
 
-use rscm_core::timeseries::Timeseries;
+use rscm_core::component::{Component, InputState, OutputState, State};
+use rscm_core::ivp::{IVP, IVPSolver}
+use rscm_core::timeseries::{Time, Timeseries};
+use rscm_core::timeseries_collection::{TimeseriesCollection, VariableType};
 use std::sync::Arc;
 
 // Define some types that are used by OdeSolvers
 type ModelState = Vector3<f32>;
-type Time = f32;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TwoLayerModelParameters {
     lambda0: f32,
     a: f32,
@@ -24,46 +21,56 @@ pub struct TwoLayerModelParameters {
     heat_capacity_deep: f32,
 }
 
-#[derive(Clone)]
-pub struct TwoLayerModelState {
-    erf: Timeseries,
+pub struct TwoLayerComponent {
+    parameters: TwoLayerModelParameters,
 }
 
-#[derive(Clone)]
-pub struct TwoLayerModel {
-    parameters: Arc<TwoLayerModelParameters>,
-    state: Option<Arc<TwoLayerModelState>>,
-}
-
-impl TwoLayerModel {
-    pub fn new(parameters: Arc<TwoLayerModelParameters>, state: Arc<TwoLayerModelState>) -> Self {
-        Self {
-            parameters,
-            state: Option::from(state),
-        }
-    }
-    pub fn from_parameters(parameters: Arc<TwoLayerModelParameters>) -> Self {
-        Self {
-            parameters,
-            state: None,
-        }
+impl Component<TwoLayerModelParameters> for TwoLayerComponent {
+    fn from_parameters(parameters: TwoLayerModelParameters) -> Self {
+        Self { parameters }
     }
 
-    fn with_state(mut self, state: Arc<TwoLayerModelState>) -> Self {
-        self.state = Option::from(state);
-        self
+    fn inputs() -> Vec<String> {
+        vec!["erf".to_string()]
     }
-    fn solve(&self) -> Result<Stats, IntegrationError> {
+
+    fn outputs() -> Vec<String> {
+        vec!["Surface Temperature".to_string()]
+    }
+
+    fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState {
+        InputState::new(vec![collection.get_timeseries("erf").unwrap().at_time(t_current).unwrap()], TwoLayerComponent::inputs())
+    }
+
+    fn solve(
+        &self,
+        t_current: Time,
+        t_next: Time,
+        input_state: InputState,
+    ) -> Result<OutputState, String> {
+        let erf = input_state.get("erf");
+
         let y0 = ModelState::new(0.0, 0.0, 0.0);
 
+        let a = Arc::from(self);
+        let solver = IVPSolver::new(&self, input_state);
+        let res = solver.integrate();
+
         // Create the solver
-        let mut stepper = Rk4::new(self.clone(), 1848.0, y0, 1900.0, 1.0);
-        stepper.integrate()
+        let mut stepper = Rk4::new(self.clone(), t_current, y0, t_next, 1.0);
+        let res = stepper.integrate();
+
+        println!("Solving {:?} with state: {:?}", self, input_state);
+
+        Ok(OutputState::new(
+            vec![erf * self.parameters.lambda0],
+            TwoLayerComponent::outputs(),
+        ))
     }
 }
 
 // Create the set of ODEs to represent the two layer model
-impl System<Time, ModelState> for TwoLayerModel {
+impl IVP<ModelState> for TwoLayerComponent {
     fn system(&self, t: Time, y: &ModelState, dy: &mut ModelState) {
         let temperature_surface = y[0];
         let temperature_deep = y[1];
@@ -90,19 +97,24 @@ impl System<Time, ModelState> for TwoLayerModel {
 
 pub fn solve_tlm() {
     // Initialise the model
-    let model = TwoLayerModel::from_parameters(Arc::new(TwoLayerModelParameters {
+    let model = TwoLayerComponent::from_parameters(TwoLayerModelParameters {
         lambda0: 0.5,
         a: 0.01,
         efficacy: 0.5,
         eta: 0.1,
         heat_capacity_surface: 1.0,
         heat_capacity_deep: 100.0,
-    }));
-    let erf = Timeseries::from_values(
-        array![0.0, 0.0, 2.0, 2.0],
-        array![1848.0, 1849.0, 1850.0, 1900.0],
+    });
+
+    let mut ts_collection = TimeseriesCollection::new();
+    ts_collection.add_timeseries(
+        "erf".to_string(),
+        Timeseries::from_values(
+            array![0.0, 0.0, 2.0, 2.0],
+            array![1848.0, 1849.0, 1850.0, 1900.0],
+        ),
+        VariableType::Endogenous
     );
-    let state = Arc::new(TwoLayerModelState { erf });
 
     // Create the solver
     let res = model.with_state(state).solve();

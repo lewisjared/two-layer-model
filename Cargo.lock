@@ -435,8 +435,10 @@ dependencies = [
 name = "rscm-core"
 version = "0.1.0"
 dependencies = [
+ "nalgebra",
  "ndarray-interp",
  "numpy",
+ "ode_solvers",
  "pyo3",
 ]
 
