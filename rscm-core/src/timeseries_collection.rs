@@ -9,6 +9,7 @@ pub enum VariableType {
     /// Values that are determined within the model
     Endogenous,
 }
+
 pub struct TimeseriesItem {
     timeseries: Timeseries,
     name: String,

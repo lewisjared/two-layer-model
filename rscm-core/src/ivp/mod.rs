@@ -1,7 +1,7 @@
 use crate::component::InputState;
 use nalgebra::allocator::Allocator;
 use nalgebra::{DefaultAllocator, Dim};
-use ode_solvers::dop_shared::{FloatNumber, IntegrationError, Stats};
+use ode_solvers::dop_shared::FloatNumber;
 use ode_solvers::*;
 use std::sync::Arc;
 

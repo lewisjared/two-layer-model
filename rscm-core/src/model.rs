@@ -2,7 +2,7 @@ use crate::timeseries::{Time, TimeAxis};
 use crate::timeseries_collection::TimeseriesCollection;
 
 pub struct Model {
-    ts: TimeseriesCollection,
+    collection: TimeseriesCollection,
     time_axis: TimeAxis,
     time_index: usize,
 }
@@ -13,7 +13,7 @@ pub struct Model {
 impl Model {
     pub fn new(time_axis: TimeAxis) -> Self {
         Self {
-            ts: TimeseriesCollection::new(),
+            collection: TimeseriesCollection::new(),
             time_axis,
             time_index: 0,
         }

@@ -91,7 +91,7 @@ impl Component<TwoLayerModelParameters> for TwoLayerComponent {
 
         let y0 = ModelState::new(0.0, 0.0, 0.0);
 
-        let mut solver = IVPBuilder::new(Arc::new(self.to_owned()), input_state.clone(), y0);
+        let solver = IVPBuilder::new(Arc::new(self.to_owned()), input_state.clone(), y0);
         println!("Solving {:?} with state: {:?}", self, input_state);
 
         let mut solver = solver.to_rk4(t_current, t_next, 0.1);
