@@ -1,6 +1,8 @@
 use crate::{solve_tlm, TwoLayerModel, TwoLayerModelParameters};
 use pyo3::prelude::*;
+use pyo3::wrap_pymodule;
 use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction};
+use rscm_core::python::core;
 use std::sync::Arc;
 
 #[gen_stub_pyfunction]
@@ -48,10 +50,12 @@ impl PyTwoLayerModel {
     }
 }
 #[pymodule]
-#[pyo3(name = "_core")]
-fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+#[pyo3(name = "_lib")]
+fn tlm(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_wrapped(wrap_pymodule!(core))?;
     m.add_function(wrap_pyfunction!(add, m)?)?;
     m.add_function(wrap_pyfunction!(py_solve_tlm, m)?)?;
+    m.add_class::<PyTwoLayerModel>()?;
     Ok(())
 }
 

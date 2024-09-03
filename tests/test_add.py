@@ -1,5 +1,5 @@
 import pytest
-from two_layer_model._core import add, solve_tlm
+from two_layer_model._lib import add, solve_tlm
 
 
 @pytest.mark.parametrize(

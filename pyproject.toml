@@ -6,7 +6,7 @@ build-backend = 'maturin'
 
 [tool.maturin]
 python-source = "python"
-module-name = "two_layer_model._core"
+module-name = "two_layer_model._lib"
 bindings = 'pyo3'
 features = ["pyo3/extension-module"]
 
