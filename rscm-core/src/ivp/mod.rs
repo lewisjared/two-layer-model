@@ -1,9 +1,25 @@
 use crate::component::InputState;
+use crate::timeseries::Time;
 use nalgebra::allocator::Allocator;
 use nalgebra::{DefaultAllocator, Dim};
-use ode_solvers::dop_shared::FloatNumber;
+use ode_solvers::dop_shared::{FloatNumber, SolverResult};
 use ode_solvers::*;
 use std::sync::Arc;
+
+const T_THRESHOLD: Time = 1e-5;
+
+pub fn get_last_step<V>(results: &SolverResult<Time, V>, t_expected: Time) -> &V {
+    let (t, y) = results.get();
+    let t_distance = (t.last().unwrap().to_owned() - t_expected).abs();
+
+    assert!(y.len() > 1);
+    // I couldn't figure out how to make this value a constant that worked with generics
+    assert!(t_distance < T_THRESHOLD);
+
+    let last_timestep = y.get(y.len() - 1).unwrap();
+
+    last_timestep
+}
 
 pub trait IVP<T, S> {
     fn calculate_dy_dt(&self, t: T, input_state: &InputState, y: &S, dy_dt: &mut S);

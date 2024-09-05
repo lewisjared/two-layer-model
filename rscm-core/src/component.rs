@@ -1,5 +1,6 @@
 use crate::timeseries::Time;
 use crate::timeseries_collection::TimeseriesCollection;
+use std::collections::HashMap;
 
 /// Generic state representation
 ///
@@ -29,6 +30,19 @@ impl InputState {
         assert_eq!(values.len(), names.len());
         Self { values, names }
     }
+
+    pub fn from_hashmap(mut items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
+        let mut values = Vec::new();
+        let mut names = Vec::new();
+        for (k, v) in items.drain().take(1) {
+            names.push(k.to_string());
+            values.push(v);
+        }
+
+        assert_eq!(names, expected_items);
+
+        Self { values, names }
+    }
 }
 impl State for InputState {
     fn names(&self) -> &Vec<String> {
@@ -51,6 +65,18 @@ impl OutputState {
         assert_eq!(values.len(), names.len());
         Self { values, names }
     }
+    pub fn from_hashmap(mut items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
+        let mut values = Vec::new();
+        let mut names = Vec::new();
+        for (k, v) in items.drain().take(1) {
+            names.push(k.to_string());
+            values.push(v);
+        }
+
+        assert_eq!(names, expected_items);
+
+        Self { values, names }
+    }
 }
 
 impl State for OutputState {
@@ -65,7 +91,7 @@ impl State for OutputState {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ParameterType {
-    Constant,
+    Constant, // I don't think this is needed here
     Input,
     Output,
 }
@@ -146,7 +172,17 @@ pub trait Component {
     /// Extract the input state for the current time step
     ///
     /// The result should contain values for the current time step for all input variable
-    fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState;
+    fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState {
+        let mut state = HashMap::new();
+
+        self.input_names().into_iter().for_each(|name| {
+            let ts = collection.get_timeseries(name.as_str()).unwrap();
+
+            state.insert(name, ts.at_time(t_current).unwrap());
+        });
+
+        InputState::from_hashmap(state, self.input_names())
+    }
 
     /// Solve the component until `t_next`
     ///

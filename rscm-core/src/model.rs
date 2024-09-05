@@ -29,13 +29,13 @@ pub struct ModelBuilder {
 }
 
 impl ModelBuilder {
-    fn new() -> Self {
+    pub fn new(time_axis: TimeAxis) -> Self {
         Self {
             links: vec![],
-            time_axis: Arc::new(TimeAxis::from_values(Array::range(2020.0, 2025.0, 1.0))),
+            time_axis: Arc::new(time_axis),
         }
     }
-    fn with_component(&mut self, component: Arc<dyn Component + Send + Sync>) -> &Self {
+    pub fn with_component(&mut self, component: Arc<dyn Component + Send + Sync>) -> &Self {
         self.links.push(ComponentLink {
             component,
             provides: vec![],
@@ -43,7 +43,7 @@ impl ModelBuilder {
         });
         self
     }
-    fn with_time_axis(mut self, time_axis: TimeAxis) -> Self {
+    pub fn with_time_axis(&mut self, time_axis: TimeAxis) -> &Self {
         self.time_axis = Arc::new(time_axis);
         self
     }
