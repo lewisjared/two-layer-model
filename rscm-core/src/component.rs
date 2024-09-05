@@ -63,6 +63,32 @@ impl State for OutputState {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum ParameterType {
+    Constant,
+    Input,
+    Output,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ParameterDefinition {
+    pub name: String,
+    pub unit: String,
+    parameter_type: ParameterType,
+}
+
+impl ParameterDefinition {
+    pub fn new(name: &str, unit: &str, parameter_type: ParameterType) -> Self {
+        Self {
+            name: name.to_string(),
+            unit: unit.to_string(),
+            parameter_type,
+        }
+    }
+}
+
+trait Parameters {}
+
 /// Component of a reduced complexity climate model
 ///
 /// Each component encapsulates some set of physics that can be solved for a given time step.
@@ -77,17 +103,20 @@ impl State for OutputState {
 /// * inputs: State information required to solve the model. This come from either other
 /// components as part of a coupled system or from exogenous data.
 /// * outputs: Information that is solved by the component
-pub trait Component<Parameters> {
-    fn from_parameters(parameters: Parameters) -> Self
-    where
-        // Used to opt out of this method when used as an object trait
-        // See https://doc.rust-lang.org/error_codes/E0038.html
-        Self: Sized;
+pub trait Component {
+    fn definitions(&self) -> Vec<ParameterDefinition>;
 
     /// Variables that are required to solve this component
-    fn inputs() -> Vec<String>
-    where
-        Self: Sized;
+    fn inputs(&self) -> Vec<ParameterDefinition> {
+        self.definitions()
+            .iter()
+            .filter(|d| d.parameter_type == ParameterType::Input)
+            .cloned()
+            .collect()
+    }
+    fn input_names(&self) -> Vec<String> {
+        self.inputs().into_iter().map(|d| d.name).collect()
+    }
 
     /// Variables that are solved by this component
     ///
@@ -95,9 +124,24 @@ pub trait Component<Parameters> {
     /// i.e. No two components within a model can produce the same variable names.
     /// These names can contain '|' to namespace variables to avoid collisions,
     /// for example, 'Emissions|CO2' and 'Atmospheric Concentrations|CO2'
-    fn outputs() -> Vec<String>
-    where
-        Self: Sized;
+    fn outputs(&self) -> Vec<ParameterDefinition> {
+        self.definitions()
+            .iter()
+            .filter(|d| d.parameter_type == ParameterType::Output)
+            .cloned()
+            .collect()
+    }
+    fn output_names(&self) -> Vec<String> {
+        self.inputs().into_iter().map(|d| d.name).collect()
+    }
+
+    fn constants(&self) -> Vec<ParameterDefinition> {
+        self.definitions()
+            .iter()
+            .filter(|d| d.parameter_type == ParameterType::Constant)
+            .cloned()
+            .collect()
+    }
 
     /// Extract the input state for the current time step
     ///
@@ -115,55 +159,63 @@ pub trait Component<Parameters> {
     ) -> Result<OutputState, String>;
 }
 
+#[derive(Debug)]
+pub(crate) struct TestComponentParameters {
+    pub p: f32,
+}
+
+impl Parameters for TestComponentParameters {}
+
+#[derive(Debug)]
+pub(crate) struct TestComponent {
+    parameters: TestComponentParameters,
+}
+
+impl TestComponent {
+    pub fn from_parameters(parameters: TestComponentParameters) -> Self {
+        Self { parameters }
+    }
+}
+
+impl Component for TestComponent {
+    fn definitions(&self) -> Vec<ParameterDefinition> {
+        vec![
+            ParameterDefinition {
+                name: "Emissions|CO2".to_string(),
+                unit: "GtCO2".to_string(),
+                parameter_type: ParameterType::Input,
+            },
+            ParameterDefinition {
+                name: "Concentrations|CO2".to_string(),
+                unit: "ppm".to_string(),
+                parameter_type: ParameterType::Output,
+            },
+        ]
+    }
+
+    fn extract_state(&self, _collection: &TimeseriesCollection, _t_current: Time) -> InputState {
+        InputState::new(vec![1.3], self.input_names())
+    }
+    fn solve(
+        &self,
+        _t_current: Time,
+        _t_next: Time,
+        input_state: &InputState,
+    ) -> Result<OutputState, String> {
+        let emission_co2 = input_state.get("Emissions|CO2");
+
+        println!("Solving {:?} with state: {:?}", self, input_state);
+
+        Ok(OutputState::new(
+            vec![emission_co2 * self.parameters.p],
+            self.output_names(),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[derive(Debug)]
-    struct TestComponentParameters {
-        p: f32,
-    }
-
-    #[derive(Debug)]
-    struct TestComponent {
-        parameters: TestComponentParameters,
-    }
-
-    impl Component<TestComponentParameters> for TestComponent {
-        fn from_parameters(parameters: TestComponentParameters) -> Self {
-            Self { parameters }
-        }
-
-        fn inputs() -> Vec<String> {
-            vec!["Emissions|CO2".to_string()]
-        }
-
-        fn outputs() -> Vec<String> {
-            vec!["Concentrations|CO2".to_string()]
-        }
-        fn extract_state(
-            &self,
-            _collection: &TimeseriesCollection,
-            _t_current: Time,
-        ) -> InputState {
-            InputState::new(vec![1.3], TestComponent::inputs())
-        }
-        fn solve(
-            &self,
-            _t_current: Time,
-            _t_next: Time,
-            input_state: &InputState,
-        ) -> Result<OutputState, String> {
-            let emission_co2 = input_state.get("Emissions|CO2");
-
-            println!("Solving {:?} with state: {:?}", self, input_state);
-
-            Ok(OutputState::new(
-                vec![emission_co2 * self.parameters.p],
-                TestComponent::outputs(),
-            ))
-        }
-    }
 
     #[test]
     fn solve() {

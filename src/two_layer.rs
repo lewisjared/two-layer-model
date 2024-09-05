@@ -2,7 +2,9 @@ use numpy::ndarray::array;
 use ode_solvers::*;
 use std::sync::Arc;
 
-use rscm_core::component::{Component, InputState, OutputState, State};
+use rscm_core::component::{
+    Component, InputState, OutputState, ParameterDefinition, ParameterType, State,
+};
 use rscm_core::ivp::{IVPBuilder, IVP};
 use rscm_core::timeseries::{Time, Timeseries};
 use rscm_core::timeseries_collection::{TimeseriesCollection, VariableType};
@@ -57,17 +59,18 @@ impl IVP<Time, ModelState> for TwoLayerComponent {
     }
 }
 
-impl Component<TwoLayerModelParameters> for TwoLayerComponent {
+impl TwoLayerComponent {
     fn from_parameters(parameters: TwoLayerModelParameters) -> Self {
         Self { parameters }
     }
+}
 
-    fn inputs() -> Vec<String> {
-        vec!["erf".to_string()]
-    }
-
-    fn outputs() -> Vec<String> {
-        vec!["Surface Temperature".to_string()]
+impl Component for TwoLayerComponent {
+    fn definitions(&self) -> Vec<ParameterDefinition> {
+        vec![
+            ParameterDefinition::new("erf", "W/m^2", ParameterType::Input),
+            ParameterDefinition::new("Surface Temperature", "K", ParameterType::Output),
+        ]
     }
 
     fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState {
@@ -77,7 +80,7 @@ impl Component<TwoLayerModelParameters> for TwoLayerComponent {
                 .unwrap()
                 .at_time(t_current)
                 .unwrap()],
-            TwoLayerComponent::inputs(),
+            self.input_names(),
         )
     }
 
@@ -106,7 +109,7 @@ impl Component<TwoLayerModelParameters> for TwoLayerComponent {
 
         Ok(OutputState::new(
             vec![erf * self.parameters.lambda0],
-            TwoLayerComponent::outputs(),
+            self.output_names(),
         ))
     }
 }
