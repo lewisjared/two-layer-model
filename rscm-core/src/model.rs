@@ -209,7 +209,7 @@ mod tests {
     #[test]
     fn dot() {
         let time_axis = TimeAxis::from_values(Array::range(2020.0, 2025.0, 1.0));
-        let mut model = ModelBuilder::new()
+        let model = ModelBuilder::new()
             .with_time_axis(time_axis)
             .with_component(Arc::new(TestComponent::from_parameters(
                 TestComponentParameters { p: 0.5 },
