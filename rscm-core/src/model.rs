@@ -1,14 +1,13 @@
-use crate::component::Component;
+use crate::component::{Component, ParameterDefinition};
 use crate::timeseries::{Time, TimeAxis};
 use crate::timeseries_collection::TimeseriesCollection;
 use numpy::ndarray::Array;
 use petgraph::algo::is_cyclic_directed;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::NodeIndex;
-use petgraph::visit::{Bfs, IntoNeighborsDirected};
+use petgraph::visit::Bfs;
 use petgraph::Graph;
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::ops::Index;
 use std::sync::Arc;
 
@@ -19,32 +18,24 @@ use std::sync::Arc;
 /// * Iterate through components in order
 /// * If an input already exists, use it and link to the node that provides it
 ///
-
-#[derive(Clone, Debug)]
-pub(self) struct ComponentLink {
-    component: Option<Arc<dyn Component + Send + Sync>>,
-    provides: Vec<String>,
-    requires: Vec<String>,
-}
+///
+///
+type C = Arc<dyn Component + Send + Sync>;
 
 pub struct ModelBuilder {
-    links: Vec<ComponentLink>,
+    components: Vec<C>,
     time_axis: Arc<TimeAxis>,
 }
 
 impl ModelBuilder {
     pub fn new() -> Self {
         Self {
-            links: vec![],
+            components: vec![],
             time_axis: Arc::new(TimeAxis::from_values(Array::range(2000.0, 2100.0, 1.0))),
         }
     }
     pub fn with_component(&mut self, component: Arc<dyn Component + Send + Sync>) -> &mut Self {
-        self.links.push(ComponentLink {
-            component: Option::from(component),
-            provides: vec![],
-            requires: vec![],
-        });
+        self.components.push(component);
         self
     }
     pub fn with_time_axis(&mut self, time_axis: TimeAxis) -> &mut Self {
@@ -54,40 +45,56 @@ impl ModelBuilder {
 
     /// Builds the component graph for the registered components
     pub fn build(&self) -> Model {
-        let mut graph: Graph<ComponentLink, String> = Graph::new();
+        let mut graph: Graph<Option<C>, Option<ParameterDefinition>> = Graph::new();
         let mut endrogoneous: HashMap<String, NodeIndex> = HashMap::new();
         let mut exogenous: Vec<String> = vec![];
-        let initial_node = graph.add_node(ComponentLink {
-            component: Option::None,
-            provides: vec![],
-            requires: vec![],
-        });
+        let initial_node = graph.add_node(Option::None);
 
-        self.links.iter().for_each(|link| {
-            let node = graph.add_node(link.clone());
-            link.requires.iter().for_each(|requirement| {
-                if exogenous.contains(requirement) {
+        self.components.iter().for_each(|component| {
+            let node = graph.add_node(Option::from(component.clone()));
+            let mut has_dependencies = false;
+
+            let requires = component.inputs();
+            let provides = component.outputs();
+
+            requires.iter().for_each(|requirement| {
+                if exogenous.contains(&requirement.name) {
                     // Link to the node that provides the requirement
-                    graph.add_edge(node, endrogoneous[requirement], requirement.clone());
+                    graph.add_edge(
+                        endrogoneous[&requirement.name],
+                        node,
+                        Option::from(requirement.clone()),
+                    );
+                    has_dependencies = true;
                 } else {
                     // Add a new variable that must be defined outside of the model
-                    exogenous.push(requirement.to_string())
+                    exogenous.push(requirement.name.clone())
                 }
             });
 
-            link.provides.iter().for_each(|requirement| {
-                if exogenous.contains(requirement) {
-                    // TODO: Fix this so we can chain together something that takes and maybe
-                    // modifies the calculated state for that step.
-                    panic!("Multiple definitions of {}", requirement);
-                } else {
-                    // Keep a reference to the node that provides the requirement
-                    endrogoneous.insert(requirement.to_string(), node);
+            if !has_dependencies {
+                // If the node has no dependecies create a link to the initial node
+                // This ensures that we have a single connected graph
+                // There might be smarter ways to iterate over the nodes, but this is fine for now
+                graph.add_edge(initial_node, node, None);
+            }
+
+            provides.iter().for_each(|requirement| {
+                let val = endrogoneous.get(&requirement.name);
+
+                match val {
+                    None => {
+                        endrogoneous.insert(requirement.name.clone(), node);
+                    }
+                    Some(node_index) => {
+                        println!("Duplicate definition of {:?} requirement", requirement.name);
+
+                        graph.add_edge(*node_index, node, Option::from(requirement.clone()));
+                        endrogoneous.insert(requirement.name.clone(), node);
+                    }
                 }
             });
         });
-
-        println!("{:?}", Dot::with_config(&graph, &[Config::EdgeNoLabel]));
 
         assert!(!is_cyclic_directed(&graph));
 
@@ -97,7 +104,7 @@ impl ModelBuilder {
 }
 
 pub struct Model {
-    components: Graph<ComponentLink, String>,
+    components: Graph<Option<C>, Option<ParameterDefinition>>,
     initial_node: NodeIndex,
     collection: TimeseriesCollection,
     time_axis: Arc<TimeAxis>,
@@ -109,7 +116,7 @@ pub struct Model {
 /// predefined data (exogenous).
 impl Model {
     pub fn new(
-        components: Graph<ComponentLink, String>,
+        components: Graph<Option<C>, Option<ParameterDefinition>>,
         initial_node: NodeIndex,
         time_axis: Arc<TimeAxis>,
     ) -> Self {
@@ -127,17 +134,15 @@ impl Model {
         self.time_axis.at(self.time_index).unwrap()
     }
 
-    fn process_node(&self, component_link: &ComponentLink) {
-        println!("Visiting {:?}", component_link)
-    }
+    fn process_node(&self, _component_link: &C) {}
 
     fn step_model(&mut self) {
         let mut bfs = Bfs::new(&self.components, self.initial_node);
         while let Some(nx) = bfs.next(&self.components) {
             let c = self.components.index(nx);
 
-            if (c.component.is_some()) {
-                self.process_node(c)
+            if c.is_some() {
+                self.process_node(c.as_ref().unwrap())
             }
         }
     }
@@ -155,6 +160,24 @@ impl Model {
         while self.time_index < self.time_axis.len() {
             self.step();
         }
+    }
+
+    pub fn as_dot(&self) -> Dot<&Graph<Option<C>, Option<ParameterDefinition>>> {
+        Dot::with_attr_getters(
+            &self.components,
+            &[Config::NodeNoLabel, Config::EdgeNoLabel],
+            &|_, er| {
+                let requirement = er.weight();
+                match requirement {
+                    None => "".to_string(),
+                    Some(r) => format!("label = \"{:?}\"", r),
+                }
+            },
+            &|_, (_, component)| match component {
+                None => "".to_string(),
+                Some(c) => format!("label = \"{:?}\"", c),
+            },
+        )
     }
 }
 
@@ -181,5 +204,26 @@ mod tests {
         assert_eq!(model.current_time(), 2022.0);
         model.run();
         assert_eq!(model.time_index, 5);
+    }
+
+    #[test]
+    fn dot() {
+        let time_axis = TimeAxis::from_values(Array::range(2020.0, 2025.0, 1.0));
+        let mut model = ModelBuilder::new()
+            .with_time_axis(time_axis)
+            .with_component(Arc::new(TestComponent::from_parameters(
+                TestComponentParameters { p: 0.5 },
+            )))
+            .build();
+
+        let exp = "digraph {
+    0 [ ]
+    1 [ label = \"TestComponent { parameters: TestComponentParameters { p: 0.5 } }\"]
+    0 -> 1 [ ]
+}
+";
+
+        let res = format!("{:?}", model.as_dot());
+        assert_eq!(res, exp);
     }
 }
