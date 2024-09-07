@@ -1,4 +1,5 @@
 use crate::models::carbon_cycle::CarbonCycleParameters;
+use crate::models::co2_erf::CO2ERFParameters;
 use numpy::array;
 use numpy::ndarray::Array;
 use rscm_core::model::ModelBuilder;
@@ -28,8 +29,9 @@ fn test_carbon_cycle() {
 
     let time_axis = TimeAxis::from_values(Array::range(t_initial, 2100.0, 1.0));
 
-    let mut builder = ModelBuilder::new(time_axis);
+    let mut builder = ModelBuilder::new();
 
+    // Build a model consisting of a single carbon cycle component
     let mut model = builder
         .with_component(Arc::new(
             carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
@@ -38,6 +40,7 @@ fn test_carbon_cycle() {
                 alpha_temperature,
             }),
         ))
+        .with_time_axis(time_axis)
         .build();
 
     let get_exp_values_before_step = |time: Time| -> f32 {
@@ -48,6 +51,52 @@ fn test_carbon_cycle() {
         emissions_level / gtc_per_ppm * tau * (1.0 - (-(time - step_year) / tau).exp())
             + get_exp_values_before_step(time)
     };
+
+    let emissions = Timeseries::new(
+        array![0.0, 0.0, step_size, step_size],
+        Arc::new(TimeAxis::from_bounds(array![
+            t_initial,
+            (t_initial + step_year) / 2.0,
+            step_year,
+            step_year + 50.0,
+            2100.0
+        ])),
+        "GtC / yr".to_string(),
+    );
+
+    model.run()
+}
+
+#[test]
+fn test_coupled_model() {
+    let tau = 20.3;
+    let conc_pi = 280.0;
+    let t_initial = 1750.0;
+    let erf_2xco2 = 4.0;
+    let step_year = 1850.0;
+    let step_size = 1.0 / 120.0;
+
+    // Have to have no temperature feedback for this to work
+    let alpha_temperature = 0.0;
+
+    let time_axis = TimeAxis::from_values(Array::range(t_initial, 2100.0, 1.0));
+
+    let mut builder = ModelBuilder::new();
+
+    // Build a model consisting of a single carbon cycle component
+    let mut model = builder
+        .with_component(Arc::new(
+            carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
+                tau,
+                conc_pi,
+                alpha_temperature,
+            }),
+        ))
+        .with_component(Arc::new(co2_erf::CO2ERF::from_parameters(
+            CO2ERFParameters { erf_2xco2, conc_pi },
+        )))
+        .with_time_axis(time_axis)
+        .build();
 
     let emissions = Timeseries::new(
         array![0.0, 0.0, step_size, step_size],

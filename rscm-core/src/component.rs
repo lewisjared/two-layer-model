@@ -1,6 +1,7 @@
 use crate::timeseries::Time;
 use crate::timeseries_collection::TimeseriesCollection;
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 /// Generic state representation
 ///
@@ -129,7 +130,8 @@ trait Parameters {}
 /// * inputs: State information required to solve the model. This come from either other
 /// components as part of a coupled system or from exogenous data.
 /// * outputs: Information that is solved by the component
-pub trait Component {
+
+pub trait Component: Debug {
     fn definitions(&self) -> Vec<ParameterDefinition>;
 
     /// Variables that are required to solve this component
