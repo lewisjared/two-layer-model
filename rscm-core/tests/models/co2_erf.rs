@@ -4,18 +4,18 @@ use rscm_core::component::{
 use rscm_core::timeseries::Time;
 
 #[derive(Debug, Clone)]
-struct CO2ERFParameters {
+pub struct CO2ERFParameters {
     /// ERF due to a doubling of atmospheric CO_2 concentrations
     /// unit: W / m^2
-    erf_2xco2: f32,
+    pub erf_2xco2: f32,
     /// Pre-industrial atmospheric CO_2 concentration
     /// unit: ppm
-    conc_pi: f32,
+    pub conc_pi: f32,
 }
 
 #[derive(Debug, Clone)]
 /// CO2 effective radiative forcing (ERF) calculations
-struct CO2ERF {
+pub struct CO2ERF {
     parameters: CO2ERFParameters,
 }
 
