@@ -94,6 +94,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f958d3d68f4167080a18141e10381e7634563984a537f2a49a30fd8e53ac5767"
 
 [[package]]
+name = "is_close"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4d49e01f14871e71a0dce6f09eb72308bca74a4adb1bab5a8c34ee26979a8a2"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -493,6 +502,7 @@ dependencies = [
 name = "rscm-core"
 version = "0.1.0"
 dependencies = [
+ "is_close",
  "log",
  "nalgebra",
  "ndarray-interp",

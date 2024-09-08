@@ -137,6 +137,15 @@ impl TimeAxis {
         }
     }
 
+    pub fn get_index(&self, time: Time) -> usize {
+        self.bounds
+            .as_slice()
+            .unwrap()
+            // Have to use binary_search_by as
+            .binary_search_by(|v| v.partial_cmp(&time).expect("Couldn't compare values"))
+            .unwrap()
+    }
+
     /// Check if the axis contains a given value
     ///
     /// # Example
