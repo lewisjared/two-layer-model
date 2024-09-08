@@ -1,4 +1,4 @@
-use crate::component::{Component, ParameterDefinition};
+use crate::component::{Component, RequirementDefinition};
 use crate::timeseries::{Time, TimeAxis, Timeseries};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use numpy::ndarray::Array;
@@ -19,7 +19,7 @@ struct VariableDefinition {
 }
 
 impl VariableDefinition {
-    fn from_parameter_definition(definition: &ParameterDefinition) -> Self {
+    fn from_requirement_definition(definition: &RequirementDefinition) -> Self {
         Self {
             name: definition.name.clone(),
             unit: definition.unit.clone(),
@@ -48,7 +48,7 @@ pub struct ModelBuilder {
 /// Panics if the parameter definition is inconsistent with any existing definitions.
 fn verify_definition(
     definitions: &mut HashMap<String, VariableDefinition>,
-    definition: &ParameterDefinition,
+    definition: &RequirementDefinition,
 ) {
     let existing = definitions.get(&definition.name);
     match existing {
@@ -58,7 +58,7 @@ fn verify_definition(
         None => {
             definitions.insert(
                 definition.name.clone(),
-                VariableDefinition::from_parameter_definition(definition),
+                VariableDefinition::from_requirement_definition(definition),
             );
         }
     }
@@ -115,7 +115,7 @@ impl ModelBuilder {
     ///
     /// Panics if the required data to build a model is not available.
     pub fn build(&self) -> Model {
-        let mut graph: Graph<Option<C>, Option<ParameterDefinition>> = Graph::new();
+        let mut graph: Graph<Option<C>, Option<RequirementDefinition>> = Graph::new();
         let mut endrogoneous: HashMap<String, NodeIndex> = HashMap::new();
         let mut exogenous: Vec<String> = vec![];
         let mut definitions: HashMap<String, VariableDefinition> = HashMap::new();
@@ -208,7 +208,7 @@ impl ModelBuilder {
 }
 
 pub struct Model {
-    components: Graph<Option<C>, Option<ParameterDefinition>>,
+    components: Graph<Option<C>, Option<RequirementDefinition>>,
     initial_node: NodeIndex,
     collection: TimeseriesCollection,
     time_axis: Arc<TimeAxis>,
@@ -220,7 +220,7 @@ pub struct Model {
 /// predefined data (exogenous).
 impl Model {
     pub fn new(
-        components: Graph<Option<C>, Option<ParameterDefinition>>,
+        components: Graph<Option<C>, Option<RequirementDefinition>>,
         initial_node: NodeIndex,
         collection: TimeseriesCollection,
         time_axis: Arc<TimeAxis>,
@@ -287,7 +287,7 @@ impl Model {
         }
     }
 
-    pub fn as_dot(&self) -> Dot<&Graph<Option<C>, Option<ParameterDefinition>>> {
+    pub fn as_dot(&self) -> Dot<&Graph<Option<C>, Option<RequirementDefinition>>> {
         Dot::with_attr_getters(
             &self.components,
             &[Config::NodeNoLabel, Config::EdgeNoLabel],

@@ -81,25 +81,25 @@ impl State<f32> for OutputState {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
-pub enum ParameterType {
+pub enum RequirementType {
     Constant, // I don't think this is needed here
     Input,
     Output,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
-pub struct ParameterDefinition {
+pub struct RequirementDefinition {
     pub name: String,
     pub unit: String,
-    parameter_type: ParameterType,
+    pub requirement_type: RequirementType,
 }
 
-impl ParameterDefinition {
-    pub fn new(name: &str, unit: &str, parameter_type: ParameterType) -> Self {
+impl RequirementDefinition {
+    pub fn new(name: &str, unit: &str, parameter_type: RequirementType) -> Self {
         Self {
             name: name.to_string(),
             unit: unit.to_string(),
-            parameter_type,
+            requirement_type: parameter_type,
         }
     }
 }
@@ -120,13 +120,13 @@ impl ParameterDefinition {
 /// * outputs: Information that is solved by the component
 
 pub trait Component: Debug {
-    fn definitions(&self) -> Vec<ParameterDefinition>;
+    fn definitions(&self) -> Vec<RequirementDefinition>;
 
     /// Variables that are required to solve this component
-    fn inputs(&self) -> Vec<ParameterDefinition> {
+    fn inputs(&self) -> Vec<RequirementDefinition> {
         self.definitions()
             .iter()
-            .filter(|d| d.parameter_type == ParameterType::Input)
+            .filter(|d| d.requirement_type == RequirementType::Input)
             .cloned()
             .collect()
     }
@@ -140,10 +140,10 @@ pub trait Component: Debug {
     /// i.e. No two components within a model can produce the same variable names.
     /// These names can contain '|' to namespace variables to avoid collisions,
     /// for example, 'Emissions|CO2' and 'Atmospheric Concentrations|CO2'
-    fn outputs(&self) -> Vec<ParameterDefinition> {
+    fn outputs(&self) -> Vec<RequirementDefinition> {
         self.definitions()
             .iter()
-            .filter(|d| d.parameter_type == ParameterType::Output)
+            .filter(|d| d.requirement_type == RequirementType::Output)
             .cloned()
             .collect()
     }
@@ -151,10 +151,10 @@ pub trait Component: Debug {
         self.outputs().into_iter().map(|d| d.name).collect()
     }
 
-    fn constants(&self) -> Vec<ParameterDefinition> {
+    fn constants(&self) -> Vec<RequirementDefinition> {
         self.definitions()
             .iter()
-            .filter(|d| d.parameter_type == ParameterType::Constant)
+            .filter(|d| d.requirement_type == RequirementType::Constant)
             .cloned()
             .collect()
     }

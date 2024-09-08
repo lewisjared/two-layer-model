@@ -3,7 +3,7 @@ use ode_solvers::*;
 use std::sync::Arc;
 
 use rscm_core::component::{
-    Component, InputState, OutputState, ParameterDefinition, ParameterType, State,
+    Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use rscm_core::ivp::{IVPBuilder, IVP};
 use rscm_core::timeseries::{Time, Timeseries};
@@ -66,10 +66,10 @@ impl TwoLayerComponent {
 }
 
 impl Component for TwoLayerComponent {
-    fn definitions(&self) -> Vec<ParameterDefinition> {
+    fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![
-            ParameterDefinition::new("erf", "W/m^2", ParameterType::Input),
-            ParameterDefinition::new("Surface Temperature", "K", ParameterType::Output),
+            RequirementDefinition::new("erf", "W/m^2", RequirementType::Input),
+            RequirementDefinition::new("Surface Temperature", "K", RequirementType::Output),
         ]
     }
 

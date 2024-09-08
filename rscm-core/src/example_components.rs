@@ -1,5 +1,5 @@
 use crate::component::{
-    Component, InputState, OutputState, ParameterDefinition, ParameterType, State,
+    Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use crate::timeseries::Time;
 use crate::timeseries_collection::TimeseriesCollection;
@@ -21,10 +21,10 @@ impl TestComponent {
 }
 
 impl Component for TestComponent {
-    fn definitions(&self) -> Vec<ParameterDefinition> {
+    fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![
-            ParameterDefinition::new("Emissions|CO2", "GtCO2", ParameterType::Input),
-            ParameterDefinition::new("Concentrations|CO2", "ppm", ParameterType::Output),
+            RequirementDefinition::new("Emissions|CO2", "GtCO2", RequirementType::Input),
+            RequirementDefinition::new("Concentrations|CO2", "ppm", RequirementType::Output),
         ]
     }
 

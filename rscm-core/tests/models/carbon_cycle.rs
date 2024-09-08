@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
 use rscm_core::component::{
-    Component, InputState, OutputState, ParameterDefinition, ParameterType, State,
+    Component, InputState, OutputState, ParameterDefinition, RequirementType, State,
 };
 use rscm_core::ivp::{get_last_step, IVPBuilder, IVP};
 use rscm_core::timeseries::Time;
@@ -39,24 +39,28 @@ impl Component for CarbonCycleComponent {
     fn definitions(&self) -> Vec<ParameterDefinition> {
         vec![
             // Inputs
-            ParameterDefinition::new("Atmospheric Concentration|CO2", "ppm", ParameterType::Input),
-            ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", ParameterType::Input),
-            ParameterDefinition::new("Cumulative Land Uptake", "ppm", ParameterType::Input),
+            ParameterDefinition::new(
+                "Atmospheric Concentration|CO2",
+                "ppm",
+                RequirementType::Input,
+            ),
+            ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", RequirementType::Input),
+            ParameterDefinition::new("Cumulative Land Uptake", "ppm", RequirementType::Input),
             ParameterDefinition::new(
                 "Emissions|CO2|Anthropogenic",
                 "GtC / yr",
-                ParameterType::Input,
+                RequirementType::Input,
             ),
-            ParameterDefinition::new("Surface Temperature", "K", ParameterType::Input),
+            ParameterDefinition::new("Surface Temperature", "K", RequirementType::Input),
             // Outputs
             ParameterDefinition::new(
                 "Atmospheric Concentration|CO2",
                 "ppm",
-                ParameterType::Output,
+                RequirementType::Output,
             ),
-            ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", ParameterType::Output),
-            ParameterDefinition::new("Cumulative Land Uptake", "ppm", ParameterType::Output),
-            ParameterDefinition::new("Land uptake", "ppm", ParameterType::Output),
+            ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", RequirementType::Output),
+            ParameterDefinition::new("Cumulative Land Uptake", "ppm", RequirementType::Output),
+            ParameterDefinition::new("Land uptake", "ppm", RequirementType::Output),
         ]
     }
 
