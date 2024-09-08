@@ -2,6 +2,7 @@ use crate::errors::{RSCMError, RSCMResult};
 use is_close::is_close;
 use num::Float;
 use numpy::ndarray::Array1;
+use std::cmp::{max, min};
 use std::fmt::Display;
 
 #[derive(PartialEq)]
@@ -21,7 +22,7 @@ where
         target: T,
         time_bounds: &Array1<T>,
         allow_extrapolation: bool,
-    ) -> RSCMResult<(SegmentOptions, Option<usize>)> {
+    ) -> RSCMResult<(SegmentOptions, usize)> {
         let end_segment_idx = Self::find_segment_index(&target, time_bounds);
 
         let needs_extrap_forward = end_segment_idx == time_bounds.len();
@@ -29,8 +30,10 @@ where
 
         // Check if we can fast return because there is an exact match
         if !needs_extrap_forward {
-            if is_close!(time_bounds[end_segment_idx], target) {
-                return Ok((SegmentOptions::OnBoundary, Option::from(end_segment_idx)));
+            if is_close!(time_bounds[end_segment_idx], target)
+                & (end_segment_idx < time_bounds.len() - 2)
+            {
+                return Ok((SegmentOptions::OnBoundary, end_segment_idx));
             }
         }
 
@@ -52,11 +55,11 @@ where
             }
         }
         if needs_extrap_backward {
-            Ok((SegmentOptions::ExtrapolateBackward, None))
+            Ok((SegmentOptions::ExtrapolateBackward, 0))
         } else if needs_extrap_forward {
-            Ok((SegmentOptions::ExtrapolateForward, None))
+            Ok((SegmentOptions::ExtrapolateForward, time_bounds.len()))
         } else {
-            Ok((SegmentOptions::InSegment, Option::from(end_segment_idx)))
+            Ok((SegmentOptions::InSegment, end_segment_idx))
         }
     }
 
@@ -103,10 +106,12 @@ where
             Ok(info) => info,
             Err(e) => return Err(e),
         };
+        // Clip the index to exclude the last bound
+        let end_segment_idx = min(end_segment_idx, self.y.len() - 1);
 
-        if segment_options == SegmentOptions::OnBoundary {
+        if (segment_options == SegmentOptions::OnBoundary) {
             // Fast return
-            return Ok(self.y[end_segment_idx.unwrap()]);
+            return Ok(self.y[end_segment_idx]);
         }
 
         let (time1, time2, y1, y2) = match segment_options {
@@ -121,18 +126,16 @@ where
                 (time1, time2, y1, y2)
             }
             SegmentOptions::ExtrapolateForward => {
-                // Use first two points
-                let time1 = self.time[0];
-                let y1 = self.y[0];
+                // Use last two points (excludes the influence of the bound of the last value
+                let time1 = self.time[self.y.len() - 2];
+                let y1 = self.y[self.y.len() - 2];
 
-                let time2 = self.time[1];
-                let y2 = self.y[1];
+                let time2 = self.time[self.y.len() - 1];
+                let y2 = self.y[self.y.len() - 1];
 
                 (time1, time2, y1, y2)
             }
-            SegmentOptions::InSegment => {
-                let end_segment_idx = end_segment_idx.unwrap();
-
+            SegmentOptions::InSegment | SegmentOptions::OnBoundary => {
                 // Use points surrounding time_target
                 let time1 = self.time[end_segment_idx - 1];
                 let y1 = self.y[end_segment_idx - 1];
@@ -141,10 +144,6 @@ where
                 let y2 = self.y[end_segment_idx];
 
                 (time1, time2, y1, y2)
-            }
-
-            _ => {
-                panic!("All other options handled")
             }
         };
 
@@ -196,6 +195,22 @@ mod tests {
 
             let err = res.err().unwrap();
             assert!(err.to_string().starts_with("Extrapolation is not allowed"))
+        })
+    }
+
+    #[test]
+    fn test_linear_extrapolation() {
+        let time = array![0.0, 0.5, 1.0, 1.5];
+        let y = array![5.0, 8.0, 9.0];
+
+        let target = vec![-0.5, -0.25, 0.45, 1.5, 2.0];
+        let exps = vec![2.0, 3.5, 7.7, 10.0, 11.0];
+
+        let interpolator = LinearSpline::new(&time, &y, true);
+
+        zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
+            println!("target={}, expected={}", t, e);
+            assert!(is_close!(interpolator.interpolate(t).unwrap(), e));
         })
     }
 }
