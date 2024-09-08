@@ -3,7 +3,7 @@ use numpy::{PyArray1, PyArrayMethods};
 use pyo3::prelude::*;
 
 #[pyclass]
-pub struct PyTimeseries(pub Timeseries);
+pub struct PyTimeseries(pub Timeseries<f32>);
 
 #[pymethods]
 impl PyTimeseries {

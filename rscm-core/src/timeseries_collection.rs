@@ -1,7 +1,7 @@
 use crate::timeseries::Timeseries;
 use std::collections::HashMap;
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Eq, Debug)]
 #[pyo3::pyclass]
 pub enum VariableType {
     /// Values that are defined outside of the model
@@ -10,8 +10,9 @@ pub enum VariableType {
     Endogenous,
 }
 
+#[derive(Debug)]
 pub struct TimeseriesItem {
-    timeseries: Timeseries,
+    timeseries: Timeseries<f32>,
     name: String,
     variable_type: VariableType,
 }
@@ -36,7 +37,7 @@ impl TimeseriesCollection {
     pub fn add_timeseries(
         &mut self,
         name: String,
-        timeseries: Timeseries,
+        timeseries: Timeseries<f32>,
         variable_type: VariableType,
     ) {
         if self.timeseries.contains_key(&name) {
@@ -56,8 +57,13 @@ impl TimeseriesCollection {
         self.timeseries.get(name)
     }
 
-    pub fn get_timeseries(&self, name: &str) -> Option<&Timeseries> {
+    pub fn get_timeseries(&self, name: &str) -> Option<&Timeseries<f32>> {
         self.timeseries.get(name).map(|item| &item.timeseries)
+    }
+    pub fn get_timeseries_mut(&mut self, name: &str) -> Option<&mut Timeseries<f32>> {
+        self.timeseries
+            .get_mut(name)
+            .map(|item| &mut item.timeseries)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &TimeseriesItem> {

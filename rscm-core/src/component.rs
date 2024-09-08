@@ -2,6 +2,8 @@ use crate::timeseries::Time;
 use crate::timeseries_collection::TimeseriesCollection;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
+use std::iter::zip;
 
 /// Generic state representation
 ///
@@ -10,94 +12,77 @@ use std::fmt::Debug;
 ///
 /// This is very similar to a Hashmap (with likely worse performance),
 /// but provides strong type separation.
-pub trait State {
-    fn names(&self) -> &Vec<String>;
-    fn values(&self) -> &Vec<f32>;
-
-    fn get(&self, name: &str) -> f32 {
-        let index = self.names().iter().position(|x| x == name).unwrap();
-        *self.values().get(index).unwrap()
-    }
+pub trait State<T> {
+    fn get(&self, name: &str) -> &T;
 }
 
 #[derive(Debug, Clone)]
-pub struct InputState {
-    values: Vec<f32>,
-    names: Vec<String>,
-}
+pub struct InputState(HashMap<String, f32>);
 
 impl InputState {
     pub fn new(values: Vec<f32>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
-        Self { values, names }
+        let mut map = HashMap::new();
+        zip(names, values).for_each(|(k, v)| {
+            map.insert(k, v);
+        });
+        Self(map)
     }
 
-    pub fn from_hashmap(mut items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
-        let mut values = Vec::new();
-        let mut names = Vec::new();
-        for (k, v) in items.drain().take(1) {
-            names.push(k.to_string());
-            values.push(v);
+    pub fn from_hashmap(items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
+        for key in expected_items {
+            assert!(items.contains_key(&key))
         }
 
-        assert_eq!(names, expected_items);
-
-        Self { values, names }
+        Self(items)
     }
 }
-impl State for InputState {
-    fn names(&self) -> &Vec<String> {
-        &self.names
-    }
-
-    fn values(&self) -> &Vec<f32> {
-        &self.values
+impl State<f32> for InputState {
+    fn get(&self, name: &str) -> &f32 {
+        self.0.get(name).unwrap()
     }
 }
 
 #[derive(Debug)]
-pub struct OutputState {
-    values: Vec<f32>,
-    names: Vec<String>,
-}
+pub struct OutputState(HashMap<String, f32>);
 
 impl OutputState {
     pub fn new(values: Vec<f32>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
-        Self { values, names }
+        let mut map = HashMap::new();
+        zip(names, values).for_each(|(k, v)| {
+            map.insert(k, v);
+        });
+        Self(map)
     }
-    pub fn from_hashmap(mut items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
-        let mut values = Vec::new();
-        let mut names = Vec::new();
-        for (k, v) in items.drain().take(1) {
-            names.push(k.to_string());
-            values.push(v);
+
+    pub fn from_hashmap(items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
+        for key in expected_items {
+            assert!(items.contains_key(&key))
         }
 
-        assert_eq!(names, expected_items);
+        Self(items)
+    }
 
-        Self { values, names }
+    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, f32> {
+        self.0.iter()
     }
 }
 
-impl State for OutputState {
-    fn names(&self) -> &Vec<String> {
-        &self.names
-    }
-
-    fn values(&self) -> &Vec<f32> {
-        &self.values
+impl State<f32> for OutputState {
+    fn get(&self, name: &str) -> &f32 {
+        self.0.get(name).unwrap()
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum ParameterType {
     Constant, // I don't think this is needed here
     Input,
     Output,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct ParameterDefinition {
     pub name: String,
     pub unit: String,
@@ -262,6 +247,6 @@ mod tests {
         let input_state = component.extract_state(&TimeseriesCollection::new(), 2020.0);
         let output_state = component.solve(2020.0, 2021.0, &input_state).unwrap();
 
-        assert_eq!(output_state.get("Concentrations|CO2"), 2.0 * 1.3);
+        assert_eq!(*output_state.get("Concentrations|CO2"), 2.0 * 1.3);
     }
 }

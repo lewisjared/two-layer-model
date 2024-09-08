@@ -162,16 +162,55 @@ impl TimeAxis {
 /// A contiguous set of values
 ///
 #[derive(Clone, Debug)]
-pub struct Timeseries {
+pub struct Timeseries<T> {
     units: String,
     // TODO: Make type-agnostic
-    values: Array1<f32>,
+    values: Array1<T>,
     // Using a reference counted time axis to avoid having to maintain multiple clones of the
     // time axis.
     time_axis: Arc<TimeAxis>,
 }
 
-impl Timeseries {
+impl<T> Timeseries<T> {
+    pub fn new(values: Array1<T>, time_axis: Arc<TimeAxis>, units: String) -> Self {
+        assert_eq!(values.len(), time_axis.values().len());
+
+        Self {
+            units,
+            values,
+            time_axis,
+        }
+    }
+
+    pub fn from_values(values: Array1<T>, time: Array1<Time>) -> Self {
+        assert_eq!(values.len(), time.len());
+
+        Self {
+            units: "".to_string(),
+            values,
+            time_axis: Arc::new(TimeAxis::from_values(time)),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    pub fn set(&mut self, time_index: usize, value: T) {
+        assert!(time_index < self.len());
+        self.values[time_index] = value
+    }
+}
+
+// TODO: The interpolation routines currently require f32 values
+impl Timeseries<f32> {
+    pub fn new_empty(time_axis: Arc<TimeAxis>, units: String) -> Self {
+        let mut arr = Array::zeros(time_axis.len());
+        arr.fill(f32::NAN);
+
+        Self::new(arr, time_axis, units)
+    }
+
     /// Get the default interpolator
     ///
     /// Allows the strategy to be overwritten if needed:
@@ -192,6 +231,7 @@ impl Timeseries {
     ///     .unwrap();
     /// let result = interpolator.interp_scalar(query).unwrap();
     /// # assert_eq!(result, expected);
+    ///
     pub fn interpolator(&self) -> Interp1DBuilder<OwnedRepr<f32>, OwnedRepr<Time>, Ix1, Linear> {
         Interp1DBuilder::new(self.values.clone()).x(self.time_axis.values().to_owned())
     }
@@ -204,26 +244,6 @@ impl Timeseries {
         let interp = self.interpolator().build().unwrap();
 
         interp.interp_scalar(time)
-    }
-
-    pub fn new(values: Array1<f32>, time_axis: Arc<TimeAxis>, units: String) -> Self {
-        assert_eq!(values.len(), time_axis.values().len());
-
-        Self {
-            units,
-            values,
-            time_axis,
-        }
-    }
-
-    pub fn from_values(values: Array1<f32>, time: Array1<f32>) -> Self {
-        assert_eq!(values.len(), time.len());
-
-        Self {
-            units: "".to_string(),
-            values,
-            time_axis: Arc::new(TimeAxis::from_values(time)),
-        }
     }
 }
 
