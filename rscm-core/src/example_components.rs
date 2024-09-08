@@ -29,7 +29,7 @@ impl Component for TestComponent {
     }
 
     fn extract_state(&self, _collection: &TimeseriesCollection, _t_current: Time) -> InputState {
-        InputState::new(vec![1.3], self.input_names())
+        InputState::from_vectors(vec![1.3], self.input_names())
     }
     fn solve(
         &self,
@@ -41,7 +41,7 @@ impl Component for TestComponent {
 
         println!("Solving {:?} with state: {:?}", self, input_state);
 
-        Ok(OutputState::new(
+        Ok(OutputState::from_vectors(
             vec![emission_co2 * self.parameters.p],
             self.output_names(),
         ))

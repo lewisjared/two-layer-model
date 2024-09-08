@@ -2,6 +2,7 @@ use crate::models::carbon_cycle::CarbonCycleParameters;
 use crate::models::co2_erf::CO2ERFParameters;
 use numpy::array;
 use numpy::ndarray::Array;
+use rscm_core::component::InputState;
 use rscm_core::model::ModelBuilder;
 use rscm_core::timeseries::{Time, TimeAxis, Timeseries};
 use std::sync::Arc;
@@ -60,6 +61,15 @@ fn test_carbon_cycle() {
                 conc_pi,
                 alpha_temperature,
             }),
+        ))
+        .with_initial_values(InputState::from_vectors(
+            vec![0.0, 0.0, 0.0, conc_initial],
+            vec![
+                "Cumulative Land Uptake".to_string(),
+                "Cumulative Emissions|CO2".to_string(),
+                "Surface Temperature".to_string(),
+                "Atmospheric Concentration|CO2".to_string(),
+            ],
         ))
         .with_time_axis(time_axis)
         .with_exogenous_variable("Emissions|CO2|Anthropogenic", emissions)

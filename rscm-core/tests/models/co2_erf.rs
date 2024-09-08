@@ -1,5 +1,5 @@
 use rscm_core::component::{
-    Component, InputState, OutputState, ParameterDefinition, RequirementType, State,
+    Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use rscm_core::timeseries::Time;
 
@@ -26,14 +26,14 @@ impl CO2ERF {
 }
 
 impl Component for CO2ERF {
-    fn definitions(&self) -> Vec<ParameterDefinition> {
+    fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![
-            ParameterDefinition::new(
+            RequirementDefinition::new(
                 "Atmospheric Concentration|CO2",
                 "ppm",
                 RequirementType::Input,
             ),
-            ParameterDefinition::new(
+            RequirementDefinition::new(
                 "Effective Radiative Forcing|CO2",
                 "W / m^2",
                 RequirementType::Output,
@@ -53,6 +53,6 @@ impl Component for CO2ERF {
                     / self.parameters.conc_pi)
                 .log10();
 
-        Ok(OutputState::new(vec![erf], self.output_names()))
+        Ok(OutputState::from_vectors(vec![erf], self.output_names()))
     }
 }

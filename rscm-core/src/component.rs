@@ -1,5 +1,6 @@
 use crate::timeseries::Time;
 use crate::timeseries_collection::TimeseriesCollection;
+use std::collections::hash_map::IntoIter;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
@@ -19,7 +20,7 @@ pub trait State<T> {
 pub struct InputState(HashMap<String, f32>);
 
 impl InputState {
-    pub fn new(values: Vec<f32>, names: Vec<String>) -> Self {
+    pub fn from_vectors(values: Vec<f32>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
         let mut map = HashMap::new();
         zip(names, values).for_each(|(k, v)| {
@@ -28,12 +29,44 @@ impl InputState {
         Self(map)
     }
 
-    pub fn from_hashmap(items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
+    pub fn empty() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn from_hashmap_and_verify(
+        items: HashMap<String, f32>,
+        expected_items: Vec<String>,
+    ) -> Self {
         for key in expected_items {
             assert!(items.contains_key(&key))
         }
+        Self::from_hashmap(items)
+    }
 
+    pub fn from_hashmap(items: HashMap<String, f32>) -> Self {
         Self(items)
+    }
+
+    pub fn has(&self, name: &str) -> bool {
+        self.0.contains_key(name)
+    }
+
+    /// Merge state into this state
+    ///
+    /// Overrides any existing values with the same name
+    pub fn merge(&mut self, state: InputState) -> &mut Self {
+        state.into_iter().for_each(|(key, value)| {
+            self.0.insert(key, value);
+        });
+        self
+    }
+
+    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, f32> {
+        self.0.iter()
+    }
+
+    pub fn into_iter(self) -> IntoIter<String, f32> {
+        self.0.into_iter()
     }
 }
 impl State<f32> for InputState {
@@ -45,46 +78,13 @@ impl State<f32> for InputState {
     }
 }
 
-#[derive(Debug)]
-pub struct OutputState(HashMap<String, f32>);
-
-impl OutputState {
-    pub fn new(values: Vec<f32>, names: Vec<String>) -> Self {
-        assert_eq!(values.len(), names.len());
-        let mut map = HashMap::new();
-        zip(names, values).for_each(|(k, v)| {
-            map.insert(k, v);
-        });
-        Self(map)
-    }
-
-    pub fn from_hashmap(items: HashMap<String, f32>, expected_items: Vec<String>) -> Self {
-        for key in expected_items {
-            assert!(items.contains_key(&key))
-        }
-
-        Self(items)
-    }
-
-    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, f32> {
-        self.0.iter()
-    }
-}
-
-impl State<f32> for OutputState {
-    fn get(&self, name: &str) -> &f32 {
-        match self.0.get(name) {
-            Some(val) => val,
-            None => panic!("No state named {} found in {:?}", name, self),
-        }
-    }
-}
+pub type OutputState = InputState;
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum RequirementType {
-    Constant, // I don't think this is needed here
     Input,
     Output,
+    InputAndOutput, // TODO: Figure out how to compose input and output together
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
@@ -126,7 +126,10 @@ pub trait Component: Debug {
     fn inputs(&self) -> Vec<RequirementDefinition> {
         self.definitions()
             .iter()
-            .filter(|d| d.requirement_type == RequirementType::Input)
+            .filter(|d| {
+                (d.requirement_type == RequirementType::Input)
+                    | (d.requirement_type == RequirementType::InputAndOutput)
+            })
             .cloned()
             .collect()
     }
@@ -143,20 +146,15 @@ pub trait Component: Debug {
     fn outputs(&self) -> Vec<RequirementDefinition> {
         self.definitions()
             .iter()
-            .filter(|d| d.requirement_type == RequirementType::Output)
+            .filter(|d| {
+                (d.requirement_type == RequirementType::Output)
+                    | (d.requirement_type == RequirementType::InputAndOutput)
+            })
             .cloned()
             .collect()
     }
     fn output_names(&self) -> Vec<String> {
         self.outputs().into_iter().map(|d| d.name).collect()
-    }
-
-    fn constants(&self) -> Vec<RequirementDefinition> {
-        self.definitions()
-            .iter()
-            .filter(|d| d.requirement_type == RequirementType::Constant)
-            .cloned()
-            .collect()
     }
 
     /// Extract the input state for the current time step
@@ -171,7 +169,7 @@ pub trait Component: Debug {
             state.insert(name, ts.at_time(t_current).unwrap());
         });
 
-        InputState::from_hashmap(state, self.input_names())
+        InputState::from_hashmap_and_verify(state, self.input_names())
     }
 
     /// Solve the component until `t_next`

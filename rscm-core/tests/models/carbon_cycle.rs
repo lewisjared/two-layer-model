@@ -1,6 +1,6 @@
 use nalgebra::Vector3;
 use rscm_core::component::{
-    Component, InputState, OutputState, ParameterDefinition, RequirementType, State,
+    Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use rscm_core::ivp::{get_last_step, IVPBuilder, IVP};
 use rscm_core::timeseries::Time;
@@ -36,31 +36,36 @@ impl CarbonCycleComponent {
 }
 
 impl Component for CarbonCycleComponent {
-    fn definitions(&self) -> Vec<ParameterDefinition> {
+    fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![
             // Inputs
-            ParameterDefinition::new(
+            RequirementDefinition::new(
                 "Atmospheric Concentration|CO2",
                 "ppm",
-                RequirementType::Input,
+                RequirementType::InputAndOutput,
             ),
-            ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", RequirementType::Input),
-            ParameterDefinition::new("Cumulative Land Uptake", "ppm", RequirementType::Input),
-            ParameterDefinition::new(
+            RequirementDefinition::new(
+                "Cumulative Emissions|CO2",
+                "Gt C",
+                RequirementType::InputAndOutput,
+            ),
+            RequirementDefinition::new(
+                "Cumulative Land Uptake",
+                "Gt C",
+                RequirementType::InputAndOutput,
+            ),
+            RequirementDefinition::new(
                 "Emissions|CO2|Anthropogenic",
                 "GtC / yr",
                 RequirementType::Input,
             ),
-            ParameterDefinition::new("Surface Temperature", "K", RequirementType::Input),
+            RequirementDefinition::new("Surface Temperature", "K", RequirementType::Input),
             // Outputs
-            ParameterDefinition::new(
+            RequirementDefinition::new(
                 "Atmospheric Concentration|CO2",
                 "ppm",
                 RequirementType::Output,
             ),
-            ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", RequirementType::Output),
-            ParameterDefinition::new("Cumulative Land Uptake", "ppm", RequirementType::Output),
-            ParameterDefinition::new("Land uptake", "ppm", RequirementType::Output),
         ]
     }
 
@@ -68,12 +73,14 @@ impl Component for CarbonCycleComponent {
         let mut state = HashMap::new();
 
         self.input_names().into_iter().for_each(|name| {
-            let ts = collection.get_timeseries(name.as_str()).unwrap();
+            let ts = collection
+                .get_timeseries(name.as_str())
+                .expect(format!("Unknown variable: {}", name).as_str());
 
             state.insert(name, ts.at_time(t_current).unwrap());
         });
 
-        InputState::from_hashmap(state, self.input_names())
+        InputState::from_hashmap_and_verify(state, self.input_names())
     }
     fn solve(
         &self,
@@ -103,7 +110,10 @@ impl Component for CarbonCycleComponent {
         output.insert("Cumulative Land Uptake".to_string(), results[1]);
         output.insert("Cumulative Emissions|CO2".to_string(), results[2]);
 
-        Ok(OutputState::from_hashmap(output, self.output_names()))
+        Ok(OutputState::from_hashmap_and_verify(
+            output,
+            self.output_names(),
+        ))
     }
 }
 
@@ -112,7 +122,7 @@ impl IVP<Time, ModelState> for CarbonCycleComponent {
         &self,
         _t: Time,
         input_state: &InputState,
-        y: &Vector3<f32>,
+        _y: &Vector3<f32>,
         dy_dt: &mut Vector3<f32>,
     ) {
         let emissions = input_state.get("Emissions|CO2");

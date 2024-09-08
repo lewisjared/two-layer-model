@@ -1,11 +1,10 @@
-use crate::component::{Component, RequirementDefinition};
+use crate::component::{Component, InputState, RequirementDefinition, State};
 use crate::timeseries::{Time, TimeAxis, Timeseries};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use numpy::ndarray::Array;
-use petgraph::algo::is_cyclic_directed;
 use petgraph::dot::{Config, Dot};
 use petgraph::graph::NodeIndex;
-use petgraph::visit::Bfs;
+use petgraph::visit::{Bfs, IntoNeighbors, IntoNodeIdentifiers, Visitable};
 use petgraph::Graph;
 use std::collections::HashMap;
 use std::ops::Index;
@@ -37,7 +36,8 @@ impl VariableDefinition {
 /// TODO: figure out how to share example components throughout the docs
 pub struct ModelBuilder {
     components: Vec<C>,
-    timeseries: TimeseriesCollection,
+    exogenous_variables: TimeseriesCollection,
+    initial_values: InputState,
     time_axis: Arc<TimeAxis>,
 }
 
@@ -64,11 +64,36 @@ fn verify_definition(
     }
 }
 
+/// Check that a component graph is valid
+///
+/// We require a directed acyclic graph which doesn't contain any cycles (other than a self-referential node).
+/// This avoids the case where component `A` depends on a component `B`,
+/// but component `B` also depends on component `A`.
+fn is_valid_graph<G>(g: G) -> bool
+where
+    G: IntoNodeIdentifiers + IntoNeighbors + Visitable,
+{
+    use petgraph::visit::{depth_first_search, DfsEvent};
+
+    depth_first_search(g, g.node_identifiers(), |event| match event {
+        DfsEvent::BackEdge(a, b) => {
+            // If the cycle is self-referential then that is fine
+            match a == b {
+                true => Ok(()),
+                false => Err(()),
+            }
+        }
+        _ => Ok(()),
+    })
+    .is_err()
+}
+
 impl ModelBuilder {
     pub fn new() -> Self {
         Self {
             components: vec![],
-            timeseries: TimeseriesCollection::new(),
+            initial_values: InputState::empty(),
+            exogenous_variables: TimeseriesCollection::new(),
             time_axis: Arc::new(TimeAxis::from_values(Array::range(2000.0, 2100.0, 1.0))),
         }
     }
@@ -87,8 +112,11 @@ impl ModelBuilder {
         name: &str,
         timeseries: Timeseries<f32>,
     ) -> &mut Self {
-        self.timeseries
-            .add_timeseries(name.to_string(), timeseries, VariableType::Exogenous);
+        self.exogenous_variables.add_timeseries(
+            name.to_string(),
+            timeseries,
+            VariableType::Exogenous,
+        );
         self
     }
 
@@ -97,9 +125,22 @@ impl ModelBuilder {
     /// Any unneeded timeseries will be ignored.
     pub fn with_exogenous_collection(&mut self, collection: TimeseriesCollection) -> &mut Self {
         collection.into_iter().for_each(|x| {
-            self.timeseries
+            self.exogenous_variables
                 .add_timeseries(x.name, x.timeseries, x.variable_type)
         });
+        self
+    }
+
+    /// Adds some state to the set of initial values
+    ///
+    /// These initial values are used to provide some initial values at `t_0`.
+    /// Initial values are used for requirements which have a type of `RequirementType::InputAndOutput`.
+    /// These requirements use state from the current timestep in order to generate a value for the
+    /// next timestep.
+    /// Building a model where any variables which have `RequirementType::InputAndOutput`, but
+    /// do not have an initial value will result in an error.
+    pub fn with_initial_values(&mut self, initial_values: InputState) -> &mut Self {
+        self.initial_values.merge(initial_values);
         self
     }
 
@@ -115,6 +156,7 @@ impl ModelBuilder {
     ///
     /// Panics if the required data to build a model is not available.
     pub fn build(&self) -> Model {
+        // todo: refactor once this is more stable
         let mut graph: Graph<Option<C>, Option<RequirementDefinition>> = Graph::new();
         let mut endrogoneous: HashMap<String, NodeIndex> = HashMap::new();
         let mut exogenous: Vec<String> = vec![];
@@ -146,7 +188,8 @@ impl ModelBuilder {
             });
 
             if !has_dependencies {
-                // If the node has no dependecies create a link to the initial node
+                // If the node has no dependencies on other components,
+                // create a link to the initial node.
                 // This ensures that we have a single connected graph
                 // There might be smarter ways to iterate over the nodes, but this is fine for now
                 graph.add_edge(initial_node, node, None);
@@ -172,25 +215,32 @@ impl ModelBuilder {
         });
 
         // Check that the component graph doesn't contain any loops
-        assert!(!is_cyclic_directed(&graph));
+        assert!(!is_valid_graph(&graph));
 
         // Create the timeseries collection using the information from the components
         let mut collection = TimeseriesCollection::new();
         for (_, definition) in definitions {
             if exogenous.contains(&definition.name) {
                 // Exogenous variable is expected to be supplied
+                if self.initial_values.has(&definition.name) {
+                    // An initial value was provided
+                    let mut ts = Timeseries::new_empty(self.time_axis.clone(), definition.unit);
+                    ts.set(0, *self.initial_values.get(&definition.name));
 
-                // todo: This should consume the timeseries and then interpolate onto the correct timeaxis
-                let timeseries = self.timeseries.get_timeseries(&definition.name);
+                    collection.add_timeseries(definition.name, ts, VariableType::Exogenous)
+                } else {
+                    // Check if the timeseries is available in the provided exogenous variables
+                    // todo: This should consume the timeseries and then interpolate onto the correct timeaxis
+                    let timeseries = self.exogenous_variables.get_timeseries(&definition.name);
 
-                match timeseries {
-                    Some(timeseries) => collection.add_timeseries(
-                        definition.name,
-                        timeseries.to_owned(),
-                        VariableType::Exogenous,
-                    ),
-
-                    None => panic!("No exogenous data for {}", definition.name),
+                    match timeseries {
+                        Some(timeseries) => collection.add_timeseries(
+                            definition.name,
+                            timeseries.to_owned(),
+                            VariableType::Exogenous,
+                        ),
+                        None => println!("Requires data for {}", definition.name), // None => panic!("No exogenous data for {}", definition.name),
+                    }
                 }
             } else {
                 // Create a placeholder for data that will be generated by the model
@@ -260,6 +310,11 @@ impl Model {
         }
     }
 
+    /// Step the model forward a step by solving each component for the current time step.
+    ///
+    /// A breadth-first search across the component graph starting at the initial node
+    /// will solve the components in a way that ensures any models with dependencies are solved
+    /// after the dependent component is first solved.
     fn step_model(&mut self) {
         let mut bfs = Bfs::new(&self.components, self.initial_node);
         while let Some(nx) = bfs.next(&self.components) {
@@ -287,6 +342,9 @@ impl Model {
         }
     }
 
+    /// Create a diagram the represents the component graph
+    ///
+    /// Useful for debugging
     pub fn as_dot(&self) -> Dot<&Graph<Option<C>, Option<RequirementDefinition>>> {
         Dot::with_attr_getters(
             &self.components,

@@ -74,7 +74,7 @@ impl Component for TwoLayerComponent {
     }
 
     fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState {
-        InputState::new(
+        InputState::from_vectors(
             vec![collection
                 .get_timeseries("erf")
                 .unwrap()
