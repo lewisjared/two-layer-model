@@ -1,4 +1,5 @@
 pub mod component;
+mod example_components;
 pub mod ivp;
 pub mod model;
 pub mod python;

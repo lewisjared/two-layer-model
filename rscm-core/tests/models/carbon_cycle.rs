@@ -38,21 +38,25 @@ impl CarbonCycleComponent {
 impl Component for CarbonCycleComponent {
     fn definitions(&self) -> Vec<ParameterDefinition> {
         vec![
+            // Inputs
+            ParameterDefinition::new("Atmospheric Concentration|CO2", "ppm", ParameterType::Input),
+            ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", ParameterType::Input),
+            ParameterDefinition::new("Cumulative Land Uptake", "ppm", ParameterType::Input),
             ParameterDefinition::new(
                 "Emissions|CO2|Anthropogenic",
                 "GtC / yr",
                 ParameterType::Input,
             ),
-            ParameterDefinition::new("Atmospheric Concentration|CO2", "ppm", ParameterType::Input),
             ParameterDefinition::new("Surface Temperature", "K", ParameterType::Input),
+            // Outputs
             ParameterDefinition::new(
                 "Atmospheric Concentration|CO2",
                 "ppm",
                 ParameterType::Output,
             ),
-            ParameterDefinition::new("Land uptake|Cumulative", "ppm", ParameterType::Output),
-            ParameterDefinition::new("Land uptake", "ppm", ParameterType::Output),
             ParameterDefinition::new("Cumulative Emissions|CO2", "ppm", ParameterType::Output),
+            ParameterDefinition::new("Cumulative Land Uptake", "ppm", ParameterType::Output),
+            ParameterDefinition::new("Land uptake", "ppm", ParameterType::Output),
         ]
     }
 
@@ -74,9 +78,9 @@ impl Component for CarbonCycleComponent {
         input_state: &InputState,
     ) -> Result<OutputState, String> {
         let y0 = ModelState::new(
-            input_state.get("Atmospheric Concentration|CO2"),
-            input_state.get("Cumulative Land Uptake"),
-            input_state.get("Cumulative Emissions|CO2"),
+            *input_state.get("Atmospheric Concentration|CO2"),
+            *input_state.get("Cumulative Land Uptake"),
+            *input_state.get("Cumulative Emissions|CO2"),
         );
 
         let solver = IVPBuilder::new(Arc::new(self.to_owned()), input_state.clone(), y0);
@@ -118,6 +122,6 @@ impl IVP<Time, ModelState> for CarbonCycleComponent {
 
         dy_dt[0] = emissions / GTC_PER_PPM - uptake; // ppm / yr
         dy_dt[1] = uptake * GTC_PER_PPM; // GtC / yr
-        dy_dt[2] = emissions // GtC / yr
+        dy_dt[2] = *emissions // GtC / yr
     }
 }

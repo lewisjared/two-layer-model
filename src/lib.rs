@@ -26,7 +26,7 @@ pub struct TwoLayerModelParameters {
 
 #[derive(Clone)]
 pub struct TwoLayerModelState {
-    erf: Timeseries,
+    erf: Timeseries<f32>,
 }
 
 #[derive(Clone)]

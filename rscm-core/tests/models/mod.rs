@@ -31,18 +31,6 @@ fn test_carbon_cycle() {
 
     let mut builder = ModelBuilder::new();
 
-    // Build a model consisting of a single carbon cycle component
-    let mut model = builder
-        .with_component(Arc::new(
-            carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
-                tau,
-                conc_pi,
-                alpha_temperature,
-            }),
-        ))
-        .with_time_axis(time_axis)
-        .build();
-
     let get_exp_values_before_step = |time: Time| -> f32 {
         (conc_initial - conc_pi) * (-(time - t_initial) / tau).exp() + conc_pi
     };
@@ -64,6 +52,19 @@ fn test_carbon_cycle() {
         "GtC / yr".to_string(),
     );
 
+    // Build a model consisting of a single carbon cycle component
+    let mut model = builder
+        .with_component(Arc::new(
+            carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
+                tau,
+                conc_pi,
+                alpha_temperature,
+            }),
+        ))
+        .with_time_axis(time_axis)
+        .with_exogenous_variable("Emissions|CO2|Anthropogenic", emissions)
+        .build();
+
     model.run()
 }
 
@@ -80,24 +81,6 @@ fn test_coupled_model() {
     let alpha_temperature = 0.0;
 
     let time_axis = TimeAxis::from_values(Array::range(t_initial, 2100.0, 1.0));
-
-    let mut builder = ModelBuilder::new();
-
-    // Build a model consisting of a single carbon cycle component
-    let mut model = builder
-        .with_component(Arc::new(
-            carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
-                tau,
-                conc_pi,
-                alpha_temperature,
-            }),
-        ))
-        .with_component(Arc::new(co2_erf::CO2ERF::from_parameters(
-            CO2ERFParameters { erf_2xco2, conc_pi },
-        )))
-        .with_time_axis(time_axis)
-        .build();
-
     let emissions = Timeseries::new(
         array![0.0, 0.0, step_size, step_size],
         Arc::new(TimeAxis::from_bounds(array![
@@ -110,5 +93,26 @@ fn test_coupled_model() {
         "GtC / yr".to_string(),
     );
 
+    let mut builder = ModelBuilder::new();
+
+    // Build a model consisting of a carbon cycle and a CO2-only ERF component
+    let mut model = builder
+        .with_component(Arc::new(
+            carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
+                tau,
+                conc_pi,
+                alpha_temperature,
+            }),
+        ))
+        .with_component(Arc::new(co2_erf::CO2ERF::from_parameters(
+            CO2ERFParameters { erf_2xco2, conc_pi },
+        )))
+        .with_time_axis(time_axis)
+        .with_exogenous_variable("Emissions|CO2", emissions)
+        .build();
+
+    println!("{:?}", model.as_dot());
+
+    // Run the model
     model.run()
 }

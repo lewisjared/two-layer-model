@@ -2,7 +2,6 @@ use crate::timeseries::Time;
 use crate::timeseries_collection::TimeseriesCollection;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
 use std::iter::zip;
 
 /// Generic state representation
@@ -39,7 +38,10 @@ impl InputState {
 }
 impl State<f32> for InputState {
     fn get(&self, name: &str) -> &f32 {
-        self.0.get(name).unwrap()
+        match self.0.get(name) {
+            Some(val) => val,
+            None => panic!("No state named {} found in {:?}", name, self),
+        }
     }
 }
 
@@ -71,7 +73,10 @@ impl OutputState {
 
 impl State<f32> for OutputState {
     fn get(&self, name: &str) -> &f32 {
-        self.0.get(name).unwrap()
+        match self.0.get(name) {
+            Some(val) => val,
+            None => panic!("No state named {} found in {:?}", name, self),
+        }
     }
 }
 
@@ -98,8 +103,6 @@ impl ParameterDefinition {
         }
     }
 }
-
-trait Parameters {}
 
 /// Component of a reduced complexity climate model
 ///
@@ -145,7 +148,7 @@ pub trait Component: Debug {
             .collect()
     }
     fn output_names(&self) -> Vec<String> {
-        self.inputs().into_iter().map(|d| d.name).collect()
+        self.outputs().into_iter().map(|d| d.name).collect()
     }
 
     fn constants(&self) -> Vec<ParameterDefinition> {
@@ -182,63 +185,10 @@ pub trait Component: Debug {
     ) -> Result<OutputState, String>;
 }
 
-#[derive(Debug)]
-pub(crate) struct TestComponentParameters {
-    pub p: f32,
-}
-
-impl Parameters for TestComponentParameters {}
-
-#[derive(Debug)]
-pub(crate) struct TestComponent {
-    parameters: TestComponentParameters,
-}
-
-impl TestComponent {
-    pub fn from_parameters(parameters: TestComponentParameters) -> Self {
-        Self { parameters }
-    }
-}
-
-impl Component for TestComponent {
-    fn definitions(&self) -> Vec<ParameterDefinition> {
-        vec![
-            ParameterDefinition {
-                name: "Emissions|CO2".to_string(),
-                unit: "GtCO2".to_string(),
-                parameter_type: ParameterType::Input,
-            },
-            ParameterDefinition {
-                name: "Concentrations|CO2".to_string(),
-                unit: "ppm".to_string(),
-                parameter_type: ParameterType::Output,
-            },
-        ]
-    }
-
-    fn extract_state(&self, _collection: &TimeseriesCollection, _t_current: Time) -> InputState {
-        InputState::new(vec![1.3], self.input_names())
-    }
-    fn solve(
-        &self,
-        _t_current: Time,
-        _t_next: Time,
-        input_state: &InputState,
-    ) -> Result<OutputState, String> {
-        let emission_co2 = input_state.get("Emissions|CO2");
-
-        println!("Solving {:?} with state: {:?}", self, input_state);
-
-        Ok(OutputState::new(
-            vec![emission_co2 * self.parameters.p],
-            self.output_names(),
-        ))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::example_components::{TestComponent, TestComponentParameters};
 
     #[test]
     fn solve() {

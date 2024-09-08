@@ -1,4 +1,5 @@
 use crate::timeseries::Timeseries;
+use std::collections::hash_map::IntoValues;
 use std::collections::HashMap;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Eq, Debug)]
@@ -12,9 +13,9 @@ pub enum VariableType {
 
 #[derive(Debug)]
 pub struct TimeseriesItem {
-    timeseries: Timeseries<f32>,
-    name: String,
-    variable_type: VariableType,
+    pub timeseries: Timeseries<f32>,
+    pub name: String,
+    pub variable_type: VariableType,
 }
 
 /// A collection of time series data.
@@ -68,6 +69,10 @@ impl TimeseriesCollection {
 
     pub fn iter(&self) -> impl Iterator<Item = &TimeseriesItem> {
         self.timeseries.values()
+    }
+
+    pub fn into_iter(self) -> IntoValues<String, TimeseriesItem> {
+        self.timeseries.into_values()
     }
 }
 
