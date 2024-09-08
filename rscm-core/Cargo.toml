@@ -19,6 +19,7 @@ serde_json = "1.0"
 log = "0.4"
 num = "0.4"
 is_close = "0.1"
+thiserror = "1.0"
 
 
 [dependencies.pyo3]
