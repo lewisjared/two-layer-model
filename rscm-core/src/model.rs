@@ -227,7 +227,10 @@ impl ModelBuilder {
                     let mut ts = Timeseries::new_empty(self.time_axis.clone(), definition.unit);
                     ts.set(0, *self.initial_values.get(&definition.name));
 
-                    collection.add_timeseries(definition.name, ts, VariableType::Exogenous)
+                    // Note that timeseries that are initialised are defined as Endogenous
+                    // all but the first time point come from the model.
+                    // This could potentially be defined as a different VariableType if needed.
+                    collection.add_timeseries(definition.name, ts, VariableType::Endogenous)
                 } else {
                     // Check if the timeseries is available in the provided exogenous variables
                     // todo: This should consume the timeseries and then interpolate onto the correct timeaxis

@@ -1,5 +1,7 @@
+use nalgebra::max;
 use ndarray_interp::interp1d::{Interp1DBuilder, Linear};
 use ndarray_interp::InterpolateError;
+use num::{Float, ToPrimitive};
 use numpy::ndarray::prelude::*;
 use numpy::ndarray::{Array, Array1, OwnedRepr};
 use std::iter::zip;
@@ -162,23 +164,38 @@ impl TimeAxis {
 /// A contiguous set of values
 ///
 #[derive(Clone, Debug)]
-pub struct Timeseries<T> {
+pub struct Timeseries<T>
+where
+    T: Float,
+{
     units: String,
-    // TODO: Make type-agnostic
     values: Array1<T>,
     // Using a reference counted time axis to avoid having to maintain multiple clones of the
     // time axis.
     time_axis: Arc<TimeAxis>,
+    /// Latest value specified
+    latest: isize,
 }
 
-impl<T> Timeseries<T> {
+impl<T> Timeseries<T>
+where
+    T: Float,
+{
     pub fn new(values: Array1<T>, time_axis: Arc<TimeAxis>, units: String) -> Self {
         assert_eq!(values.len(), time_axis.values().len());
+
+        let latest = values
+            .iter()
+            .take_while(|x| !x.is_nan())
+            .count()
+            .to_isize()
+            .unwrap();
 
         Self {
             units,
             values,
             time_axis,
+            latest,
         }
     }
 
@@ -189,6 +206,7 @@ impl<T> Timeseries<T> {
             units: "".to_string(),
             values,
             time_axis: Arc::new(TimeAxis::from_values(time)),
+            latest: -1,
         }
     }
 
@@ -196,9 +214,31 @@ impl<T> Timeseries<T> {
         self.values.len()
     }
 
+    /// Set a value at time_index
     pub fn set(&mut self, time_index: usize, value: T) {
         assert!(time_index < self.len());
-        self.values[time_index] = value
+        self.values[time_index] = value;
+
+        if !value.is_nan() {
+            self.latest = max(self.latest, time_index.to_isize().unwrap())
+        }
+    }
+
+    /// Get the index of the lastest valid timestep
+    ///
+    /// Doesn't verify that all prior values are non-nan
+    pub fn latest(&self) -> &isize {
+        &self.latest
+    }
+
+    /// Get the value for the latest valid timestep
+    ///
+    /// Doesn't verify that all prior values are non-nan
+    pub fn latest_value(&self) -> Option<T> {
+        match (self.latest < 0) & (self.latest.to_usize().unwrap() < self.len()) {
+            true => None,
+            false => Option::from(self.values[self.latest.to_usize().unwrap()]),
+        }
     }
 }
 

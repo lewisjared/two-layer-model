@@ -6,7 +6,7 @@ use ode_solvers::dop_shared::{FloatNumber, SolverResult};
 use ode_solvers::*;
 use std::sync::Arc;
 
-const T_THRESHOLD: Time = 1e-5;
+const T_THRESHOLD: Time = 1e-3;
 
 pub fn get_last_step<V>(results: &SolverResult<Time, V>, t_expected: Time) -> &V {
     let (t, y) = results.get();

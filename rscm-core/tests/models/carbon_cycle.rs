@@ -4,7 +4,6 @@ use rscm_core::component::{
 };
 use rscm_core::ivp::{get_last_step, IVPBuilder, IVP};
 use rscm_core::timeseries::Time;
-use rscm_core::timeseries_collection::TimeseriesCollection;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -69,19 +68,6 @@ impl Component for CarbonCycleComponent {
         ]
     }
 
-    fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState {
-        let mut state = HashMap::new();
-
-        self.input_names().into_iter().for_each(|name| {
-            let ts = collection
-                .get_timeseries(name.as_str())
-                .expect(format!("Unknown variable: {}", name).as_str());
-
-            state.insert(name, ts.at_time(t_current).unwrap());
-        });
-
-        InputState::from_hashmap_and_verify(state, self.input_names())
-    }
     fn solve(
         &self,
         t_current: Time,
@@ -125,7 +111,7 @@ impl IVP<Time, ModelState> for CarbonCycleComponent {
         _y: &Vector3<f32>,
         dy_dt: &mut Vector3<f32>,
     ) {
-        let emissions = input_state.get("Emissions|CO2");
+        let emissions = input_state.get("Emissions|CO2|Anthropogenic");
         let temperature = input_state.get("Surface Temperature");
         let conc = input_state.get("Atmospheric Concentration|CO2");
 

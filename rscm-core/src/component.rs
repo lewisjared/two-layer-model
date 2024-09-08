@@ -1,5 +1,5 @@
 use crate::timeseries::Time;
-use crate::timeseries_collection::TimeseriesCollection;
+use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use std::collections::hash_map::IntoIter;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -159,14 +159,24 @@ pub trait Component: Debug {
 
     /// Extract the input state for the current time step
     ///
+    /// By default, for endogenous variables which are calculated as part of the model
+    /// the most recent value is used, whereas, for exogenous variables the values are linearly
+    /// interpolated.
+    /// This ensures that state calculated from previous components within the same timestep
+    /// is used.
+    ///
     /// The result should contain values for the current time step for all input variable
     fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState {
         let mut state = HashMap::new();
 
         self.input_names().into_iter().for_each(|name| {
-            let ts = collection.get_timeseries(name.as_str()).unwrap();
+            let ts = collection.get(name.as_str()).unwrap();
 
-            state.insert(name, ts.at_time(t_current).unwrap());
+            let result = match ts.variable_type {
+                VariableType::Exogenous => ts.timeseries.at_time(t_current).unwrap(),
+                VariableType::Endogenous => ts.timeseries.latest_value().unwrap(),
+            };
+            state.insert(name, result);
         });
 
         InputState::from_hashmap_and_verify(state, self.input_names())

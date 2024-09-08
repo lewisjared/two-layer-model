@@ -52,6 +52,11 @@ fn test_carbon_cycle() {
         ])),
         "GtC / yr".to_string(),
     );
+    let temperature = Timeseries::new(
+        array![temperature_value],
+        Arc::new(TimeAxis::from_bounds(array![t_initial, 2100.0])),
+        "K".to_string(),
+    );
 
     // Build a model consisting of a single carbon cycle component
     let mut model = builder
@@ -63,16 +68,16 @@ fn test_carbon_cycle() {
             }),
         ))
         .with_initial_values(InputState::from_vectors(
-            vec![0.0, 0.0, 0.0, conc_initial],
+            vec![0.0, 0.0, conc_initial],
             vec![
                 "Cumulative Land Uptake".to_string(),
                 "Cumulative Emissions|CO2".to_string(),
-                "Surface Temperature".to_string(),
                 "Atmospheric Concentration|CO2".to_string(),
             ],
         ))
         .with_time_axis(time_axis)
         .with_exogenous_variable("Emissions|CO2|Anthropogenic", emissions)
+        .with_exogenous_variable("Surface Temperature", temperature)
         .build();
 
     model.run()
