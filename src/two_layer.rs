@@ -107,7 +107,7 @@ impl Component for TwoLayerComponent {
 
         // Create the solver
 
-        Ok(OutputState::new(
+        Ok(OutputState::from_vectors(
             vec![erf * self.parameters.lambda0],
             self.output_names(),
         ))
