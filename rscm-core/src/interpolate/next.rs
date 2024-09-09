@@ -1,9 +1,9 @@
-use crate::errors::RSCMResult;
-use crate::interpolate::{Interpolate, SegmentOptions};
-use num::Float;
-use numpy::ndarray::Array1;
-use std::cmp::min;
-use std::fmt::Display;
+use ndarray_interp::interp1d::{Interp1D, Interp1DStrategy, Interp1DStrategyBuilder};
+use ndarray_interp::{BuilderError, InterpolateError};
+use std::{fmt::Debug, ops::Sub};
+
+use num_traits::{Num, NumCast};
+use numpy::ndarray::{ArrayBase, ArrayViewMut, Data, Dimension, Ix1, RemoveAxis, Zip};
 
 /// Next-value 1D interpolation
 ///
@@ -35,51 +35,96 @@ use std::fmt::Display;
 /// that the y-values are shifted to the left compared to the time-values.
 /// As a result, y(1) is only used for (backward) extrapolation,
 /// it isn't actually used in the interpolation domain at all.
-pub struct Interp1DNext<'a, T, V> {
-    time: &'a Array1<T>,
-    y: &'a Array1<V>,
-    allow_extrapolation: bool,
+#[derive(Debug)]
+pub struct Next {
+    extrapolate: bool,
 }
 
-impl<'a, T, V> Interp1DNext<'a, T, V> {
-    pub fn new(time: &'a Array1<T>, y: &'a Array1<V>, allow_extrapolation: bool) -> Self {
-        assert_eq!(time.len(), y.len() + 1);
-
-        Self {
-            time,
-            y,
-            allow_extrapolation,
-        }
+impl<Sd, Sx, D> Interp1DStrategyBuilder<Sd, Sx, D> for Next
+where
+    Sd: Data,
+    Sd::Elem: Num + PartialOrd + NumCast + Copy + Debug + Sub + Send,
+    Sx: Data<Elem = Sd::Elem>,
+    D: Dimension + RemoveAxis,
+{
+    const MINIMUM_DATA_LENGHT: usize = 2;
+    type FinishedStrat = Next;
+    fn build<Sx2>(
+        self,
+        _x: &ArrayBase<Sx2, Ix1>,
+        _data: &ArrayBase<Sd, D>,
+    ) -> Result<Self::FinishedStrat, BuilderError>
+    where
+        Sx2: Data<Elem = Sd::Elem>,
+    {
+        Ok(self)
     }
 }
 
-impl<'a, T, V> Interpolate<T, V> for Interp1DNext<'a, T, V>
+impl<Sd, Sx, D> Interp1DStrategy<Sd, Sx, D> for Next
 where
-    T: Float + Into<V> + Display,
-    V: Float + Into<T>,
+    Sd: Data,
+    Sd::Elem: Num + PartialOrd + NumCast + Copy + Debug + Sub + Send,
+    Sx: Data<Elem = Sd::Elem>,
+    D: Dimension + RemoveAxis,
 {
-    fn interpolate(&self, time_target: T) -> RSCMResult<V> {
-        let segment_info = self.find_segment(time_target, self.time, self.allow_extrapolation);
-
-        let (segment_options, end_segment_idx) = match segment_info {
-            Ok(info) => info,
-            Err(e) => return Err(e),
-        };
-        // Clip the index to exclude the last bound
-        let end_segment_idx = min(end_segment_idx, self.y.len() - 1);
-
-        if segment_options == SegmentOptions::OnBoundary {
-            // Fast return
-            return Ok(self.y[end_segment_idx]);
+    fn interp_into(
+        &self,
+        interpolator: &Interp1D<Sd, Sx, D, Self>,
+        target: ArrayViewMut<'_, <Sd>::Elem, <D as Dimension>::Smaller>,
+        x: Sx::Elem,
+    ) -> Result<(), InterpolateError> {
+        let this = interpolator;
+        if !self.extrapolate && !this.is_in_range(x) {
+            return Err(InterpolateError::OutOfBounds(format!(
+                "x = {x:#?} is not in range",
+            )));
         }
 
-        let res = match segment_options {
-            SegmentOptions::ExtrapolateBackward => self.y[0],
-            SegmentOptions::ExtrapolateForward => self.y[self.y.len() - 1],
-            SegmentOptions::InSegment | SegmentOptions::OnBoundary => self.y[end_segment_idx],
-        };
+        // find the relevant index
+        let idx = this.get_index_left_of(x);
 
-        Ok(res)
+        // lookup the data
+        let (x1, y1) = this.index_point(idx);
+        let (_, y2) = this.index_point(idx + 1);
+
+        // do interpolation
+        Zip::from(y1).and(y2).and(target).for_each(|&y1, &y2, t| {
+            *t = match x1 < x {
+                true => y1,
+                false => y2,
+            };
+        });
+        Ok(())
+    }
+}
+
+impl Next {
+    /// create a linear interpolation strategy
+    pub fn new() -> Self {
+        Self { extrapolate: false }
+    }
+
+    /// set the extrapolate property, default is `false`
+    pub fn extrapolate(mut self, extrapolate: bool) -> Self {
+        self.extrapolate = extrapolate;
+        self
+    }
+
+    /// linearly interpolate/extrapolate between two points
+    pub(crate) fn calc_frac<T>((x1, y1): (T, T), (x2, y2): (T, T), x: T) -> T
+    where
+        T: Num + Copy,
+    {
+        let b = y1;
+        let m = (y2 - y1) / (x2 - x1);
+        m * (x - x1) + b
+    }
+}
+
+impl Default for Next {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -98,11 +143,11 @@ mod tests {
         let target = vec![0.0, 0.25, 0.5, 0.75, 1.0];
         let exps = vec![5.0, 8.0, 8.0, 9.0, 9.0];
 
-        let interpolator = Interp1DNext::new(&time, &y, false);
+        let interpolator = Interp1D::new_unchecked(time, y, Next::new());
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
             println!("target={}, expected={}", t, e);
-            assert!(is_close!(interpolator.interpolate(t).unwrap(), e));
+            assert!(is_close!(interpolator.interp_scalar(t).unwrap(), e));
         })
     }
 
@@ -113,11 +158,11 @@ mod tests {
 
         let target = vec![-1.0, -0.01, 1.01, 1.2];
 
-        let interpolator = Interp1DNext::new(&time, &y, false);
+        let interpolator = Interp1D::new_unchecked(time, y, Next::new());
 
         target.into_iter().for_each(|t| {
             println!("target={t}");
-            let res = interpolator.interpolate(t);
+            let res = interpolator.interp_scalar(t);
             assert!(res.is_err());
 
             let err = res.err().unwrap();
@@ -133,10 +178,10 @@ mod tests {
         let target = vec![-1.0, 0.0, 0.25, 0.5, 0.75, 1.0, 1.2];
         let exps = vec![5.0, 5.0, 8.0, 8.0, 9.0, 9.0, 9.0];
 
-        let interpolator = Interp1DNext::new(&time, &y, true);
+        let interpolator = Interp1D::new_unchecked(time, y, Next::new().extrapolate(true));
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
-            let value = interpolator.interpolate(t).unwrap();
+            let value = interpolator.interp_scalar(t).unwrap();
             println!("target={}, expected={} found={}", t, e, value);
             assert!(is_close!(value, e));
         })
