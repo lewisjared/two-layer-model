@@ -1,9 +1,9 @@
+use crate::errors::RSCMResult;
+use crate::interpolate::{Interp1DLinearSpline, Interp1d, InterpolationStrategy};
 use nalgebra::max;
-use ndarray_interp::interp1d::{Interp1DBuilder, Linear};
-use ndarray_interp::InterpolateError;
 use num::{Float, ToPrimitive};
 use numpy::ndarray::prelude::*;
-use numpy::ndarray::{Array, Array1, OwnedRepr};
+use numpy::ndarray::{Array, Array1};
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -184,13 +184,19 @@ where
     time_axis: Arc<TimeAxis>,
     /// Latest value specified
     latest: isize,
+    interpolation_strategy: InterpolationStrategy,
 }
 
 impl<T> Timeseries<T>
 where
     T: Float,
 {
-    pub fn new(values: Array1<T>, time_axis: Arc<TimeAxis>, units: String) -> Self {
+    pub fn new(
+        values: Array1<T>,
+        time_axis: Arc<TimeAxis>,
+        units: String,
+        interpolation_strategy: InterpolationStrategy,
+    ) -> Self {
         assert_eq!(values.len(), time_axis.values().len());
 
         let latest = values
@@ -205,18 +211,28 @@ where
             values,
             time_axis,
             latest,
+            interpolation_strategy,
         }
     }
+    /// Create a new timeseries from a set of values and a time axis
+    ///
+    /// The interpolation strategy for the timeseries defaults to linear with extrapolation.
 
     pub fn from_values(values: Array1<T>, time: Array1<Time>) -> Self {
-        assert_eq!(values.len(), time.len());
-
-        Self {
-            units: "".to_string(),
+        Self::new(
             values,
-            time_axis: Arc::new(TimeAxis::from_values(time)),
-            latest: -1,
-        }
+            Arc::new(TimeAxis::from_values(time)),
+            "".to_string(),
+            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
+        )
+    }
+
+    pub fn with_interpolation_strategy(
+        &mut self,
+        interpolation_strategy: InterpolationStrategy,
+    ) -> &mut Self {
+        self.interpolation_strategy = interpolation_strategy;
+        self
     }
 
     pub fn len(&self) -> usize {
@@ -253,57 +269,50 @@ where
 
 // TODO: The interpolation routines currently require f32 values
 impl Timeseries<f32> {
-    pub fn new_empty(time_axis: Arc<TimeAxis>, units: String) -> Self {
+    pub fn new_empty(
+        time_axis: Arc<TimeAxis>,
+        units: String,
+        interpolation_strategy: InterpolationStrategy,
+    ) -> Self {
         let mut arr = Array::zeros(time_axis.len());
         arr.fill(f32::NAN);
 
-        Self::new(arr, time_axis, units)
+        Self::new(arr, time_axis, units, interpolation_strategy)
     }
 
-    /// Get the default interpolator
-    ///
-    /// Allows the strategy to be overwritten if needed:
-    /// ```rust
-    /// # use numpy::ndarray::{array, Array};
-    /// # use ndarray_interp::interp1d::Linear;
-    /// # use crate::rscm_core::timeseries::Timeseries;
-    /// let data = array![1.0, 1.5, 2.0];
-    /// let years = Array::range(2020.0, 2023.0, 1.0);
-    /// let query = 2024.0;
-    /// let expected = 3.0;
-    ///
-    /// let timeseries = Timeseries::from_values(data, years);
-    /// let interpolator = timeseries
-    ///     .interpolator()
-    ///     .strategy(Linear::new().extrapolate(true))
-    ///     .build()
-    ///     .unwrap();
-    /// let result = interpolator.interp_scalar(query).unwrap();
-    /// # assert_eq!(result, expected);
-    ///
-    pub fn interpolator(&self) -> Interp1DBuilder<OwnedRepr<f32>, OwnedRepr<Time>, Ix1, Linear> {
-        Interp1DBuilder::new(self.values.clone()).x(self.time_axis.values().to_owned())
+    /// Get the interpolator used to interpolate values onto a different timebase
+    pub fn interpolator(&self) -> Interp1d<Time, f32> {
+        Interp1d::new(
+            &self.time_axis.values(),
+            &self.values,
+            self.interpolation_strategy.clone(),
+        )
     }
 
     /// Get the value at a given time
     ///
     /// Linearly interpolates between values so doesn't currently do anything that is "spline"
     /// aware.
-    pub fn at_time(&self, time: Time) -> Result<f32, InterpolateError> {
-        let interp = self.interpolator().build().unwrap();
+    pub fn at_time(&self, time: Time) -> RSCMResult<f32> {
+        let interp = self.interpolator();
 
-        interp.interp_scalar(time)
+        interp.interpolate(time)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interpolate::{Interp1DLinearSpline, Interp1DPrevious, InterpolationStrategy};
 
     #[test]
     #[should_panic]
     fn check_monotonic_values() {
-        Timeseries::from_values(array![1.0, 2.0, 3.0], array![2020.0, 1.0, 2021.0,]);
+        Timeseries::from_values(
+            array![1.0, 2.0, 3.0],
+            array![2020.0, 1.0, 2021.0,],
+            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
+        );
     }
 
     #[test]
@@ -311,6 +320,7 @@ mod tests {
         let result = Timeseries::from_values(
             array![1.0, 2.0, 3.0, 4.0, 5.0],
             Array::range(2020.0, 2025.0, 1.0),
+            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
         );
         assert_eq!(result.at_time(2020.0).unwrap(), 1.0);
         assert_eq!(result.at_time(2020.5).unwrap(), 1.5);
@@ -327,13 +337,16 @@ mod tests {
         let query = 2024.0;
         let expected = 3.0;
 
-        let timeseries = Timeseries::from_values(data, years);
-        let interpolator = timeseries
-            .interpolator()
-            .strategy(Linear::new().extrapolate(true))
-            .build()
-            .unwrap();
-        let result = interpolator.interp_scalar(query).unwrap();
+        let mut timeseries = Timeseries::from_values(
+            data,
+            years,
+            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
+        );
+
+        timeseries
+            .with_interpolation_strategy(InterpolationStrategy::from(Interp1DPrevious::new(true)));
+
+        // let result = timeseries.interpolate(query).unwrap();
 
         assert_eq!(result, expected);
     }
