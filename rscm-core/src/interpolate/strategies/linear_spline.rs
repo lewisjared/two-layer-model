@@ -1,5 +1,5 @@
 use crate::errors::RSCMResult;
-use crate::interpolate::{Interp1DStrategy, SegmentOptions};
+use crate::interpolate::strategies::{find_segment, Interp1DStrategy, SegmentOptions};
 use num::Float;
 use numpy::ndarray::Array1;
 use std::cmp::min;
@@ -28,7 +28,7 @@ where
     V: Float + Into<T>,
 {
     fn interpolate(&self, time: &Array1<T>, y: &Array1<V>, time_target: T) -> RSCMResult<V> {
-        let segment_info = self.find_segment(time_target, time, self.extrapolate);
+        let segment_info = find_segment(time_target, time, self.extrapolate);
 
         let (segment_options, end_segment_idx) = match segment_info {
             Ok(info) => info,

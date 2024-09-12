@@ -1,5 +1,6 @@
 use crate::errors::RSCMResult;
-use crate::interpolate::{Interp1DLinearSpline, Interp1d, InterpolationStrategy};
+use crate::interpolate::strategies::{Interp1DLinearSpline, InterpolationStrategy};
+use crate::interpolate::Interp1d;
 use nalgebra::max;
 use num::{Float, ToPrimitive};
 use numpy::ndarray::prelude::*;
@@ -303,16 +304,12 @@ impl Timeseries<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpolate::{Interp1DLinearSpline, Interp1DPrevious, InterpolationStrategy};
+    use crate::interpolate::strategies::{Interp1DPrevious, InterpolationStrategy};
 
     #[test]
     #[should_panic]
     fn check_monotonic_values() {
-        Timeseries::from_values(
-            array![1.0, 2.0, 3.0],
-            array![2020.0, 1.0, 2021.0,],
-            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
-        );
+        Timeseries::from_values(array![1.0, 2.0, 3.0], array![2020.0, 1.0, 2021.0,]);
     }
 
     #[test]
@@ -320,7 +317,6 @@ mod tests {
         let result = Timeseries::from_values(
             array![1.0, 2.0, 3.0, 4.0, 5.0],
             Array::range(2020.0, 2025.0, 1.0),
-            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
         );
         assert_eq!(result.at_time(2020.0).unwrap(), 1.0);
         assert_eq!(result.at_time(2020.5).unwrap(), 1.5);
@@ -337,16 +333,12 @@ mod tests {
         let query = 2024.0;
         let expected = 3.0;
 
-        let mut timeseries = Timeseries::from_values(
-            data,
-            years,
-            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
-        );
+        let mut timeseries = Timeseries::from_values(data, years);
 
         timeseries
             .with_interpolation_strategy(InterpolationStrategy::from(Interp1DPrevious::new(true)));
 
-        // let result = timeseries.interpolate(query).unwrap();
+        let result = timeseries.interpolate(query).unwrap();
 
         assert_eq!(result, expected);
     }
