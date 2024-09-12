@@ -131,6 +131,7 @@ fn test_coupled_model() {
         .build();
 
     println!("{:?}", model.as_dot());
+    println!("{:?}", model);
 
     // Run the model
     model.run()

@@ -298,6 +298,7 @@ impl ModelBuilder {
 /// then a CO_2 concentration timeseries must be defined externally.
 /// If the model also contains a carbon cycle component which produced CO_2 concentrations,
 /// then the ERF component will be solved after the carbon cycle model.
+#[derive(Debug)]
 pub struct Model {
     /// A directed graph with components as nodes and the edges defining the state dependencies
     /// between nodes.

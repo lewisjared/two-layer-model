@@ -20,6 +20,7 @@ pub struct TimeseriesItem {
 
 /// A collection of time series data.
 /// Allows for easy access to time series data by name across the whole model
+#[derive(Debug)]
 pub struct TimeseriesCollection {
     timeseries: HashMap<String, TimeseriesItem>,
 }

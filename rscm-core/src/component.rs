@@ -170,7 +170,9 @@ pub trait Component: Debug {
         let mut state = HashMap::new();
 
         self.input_names().into_iter().for_each(|name| {
-            let ts = collection.get(name.as_str()).unwrap();
+            let ts = collection
+                .get(name.as_str())
+                .expect(format!("No timeseries with variable='{}'", name).as_str());
 
             let result = match ts.variable_type {
                 VariableType::Exogenous => ts.timeseries.at_time(t_current).unwrap(),
