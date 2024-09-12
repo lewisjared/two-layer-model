@@ -111,6 +111,12 @@ fn test_coupled_model() {
         "GtC / yr".to_string(),
         InterpolationStrategy::from(PreviousStrategy::new(true)),
     );
+    let surface_temp = Timeseries::new(
+        array![0.42],
+        Arc::new(TimeAxis::from_bounds(array![t_initial, 2100.0])),
+        "K".to_string(),
+        InterpolationStrategy::from(PreviousStrategy::new(true)),
+    );
 
     let mut builder = ModelBuilder::new();
 
@@ -127,8 +133,34 @@ fn test_coupled_model() {
             CO2ERFParameters { erf_2xco2, conc_pi },
         )))
         .with_time_axis(time_axis)
-        .with_exogenous_variable("Emissions|CO2", emissions)
+        .with_exogenous_variable("Emissions|CO2|Anthropogenic", emissions)
+        .with_exogenous_variable("Surface Temperature", surface_temp)
+        .with_initial_values(InputState::from_vectors(
+            vec![0.0, 0.0, 300.0],
+            vec![
+                "Cumulative Land Uptake".to_string(),
+                "Cumulative Emissions|CO2".to_string(),
+                "Atmospheric Concentration|CO2".to_string(),
+            ],
+        ))
         .build();
+
+    let mut variable_names: Vec<&str> =
+        model.timeseries().iter().map(|x| x.name.as_str()).collect();
+    variable_names.sort();
+
+    println!("{:?}", variable_names);
+    assert_eq!(
+        variable_names,
+        vec![
+            "Atmospheric Concentration|CO2",
+            "Cumulative Emissions|CO2",
+            "Cumulative Land Uptake",
+            "Effective Radiative Forcing|CO2",
+            "Emissions|CO2|Anthropogenic",
+            "Surface Temperature"
+        ]
+    );
 
     println!("{:?}", model.as_dot());
     println!("{:?}", model);

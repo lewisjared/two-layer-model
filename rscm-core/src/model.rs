@@ -24,6 +24,7 @@ use std::sync::Arc;
 
 type C = Arc<dyn Component + Send + Sync>;
 
+#[derive(Debug)]
 struct VariableDefinition {
     name: String,
     unit: String,
@@ -234,7 +235,7 @@ impl ModelBuilder {
         for (name, definition) in definitions {
             assert_eq!(definition.name, name);
 
-            if exogenous.contains(&definition.name) {
+            if exogenous.contains(&name) {
                 // Exogenous variable is expected to be supplied
                 if self.initial_values.has(&name) {
                     // An initial value was provided
@@ -251,7 +252,7 @@ impl ModelBuilder {
                     collection.add_timeseries(name, ts, VariableType::Endogenous)
                 } else {
                     // Check if the timeseries is available in the provided exogenous variables
-                    // todo: This should consume the timeseries and then interpolate onto the correct timeaxis
+                    // then interpolate to the right timebase
                     let timeseries = self.exogenous_variables.get_timeseries(&name);
 
                     match timeseries {
@@ -262,7 +263,7 @@ impl ModelBuilder {
                                 .interpolate_into(self.time_axis.clone()),
                             VariableType::Exogenous,
                         ),
-                        None => println!("Requires data for {}", name), // None => panic!("No exogenous data for {}", definition.name),
+                        None => panic!("No exogenous data for {}", definition.name),
                     }
                 }
             } else {
@@ -422,8 +423,13 @@ impl Model {
         )
     }
 
+    /// Returns true if the model has no more time steps to process
     pub fn finished(&self) -> bool {
         self.time_index == self.time_axis.len() - 1
+    }
+
+    pub fn timeseries(&self) -> &TimeseriesCollection {
+        &self.collection
     }
 }
 
