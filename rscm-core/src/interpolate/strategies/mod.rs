@@ -6,8 +6,9 @@ use crate::errors::{RSCMError, RSCMResult};
 use is_close::is_close;
 pub use linear_spline::Interp1DLinearSpline;
 pub use next::Interp1DNext;
-use num::Float;
-use numpy::ndarray::Array1;
+use num::{Float, ToPrimitive};
+use numpy::ndarray::{ArrayBase, Data};
+use numpy::Ix1;
 pub use previous::Interp1DPrevious;
 use std::fmt::{Debug, Formatter};
 
@@ -20,12 +21,13 @@ pub(crate) enum SegmentOptions {
 }
 
 fn find_segment<T>(
-    target: T,
-    time_bounds: &Array1<T>,
+    target: T::Elem,
+    time_bounds: &ArrayBase<T, Ix1>,
     extrapolate: bool,
 ) -> RSCMResult<(SegmentOptions, usize)>
 where
-    T: Float,
+    T: Data,
+    T::Elem: Float,
 {
     let end_segment_idx = find_segment_index(&target, time_bounds);
 
@@ -65,9 +67,10 @@ where
     }
 }
 
-fn find_segment_index<T>(target: &T, time_bounds: &Array1<T>) -> usize
+fn find_segment_index<T>(target: &T::Elem, time_bounds: &ArrayBase<T, Ix1>) -> usize
 where
-    T: PartialOrd,
+    T: Data,
+    T::Elem: PartialOrd,
 {
     let result = time_bounds
         .as_slice()
@@ -84,10 +87,19 @@ where
 /// that require assumptions about how to convert between discrete and continuous data
 /// (e.g. integration and differentiation). These assumptions can be encoded using different
 /// interpolation strategies.
-pub trait Interp1DStrategy<T, V> {
+pub trait Interp1DStrategy<At, Ay>
+where
+    At: Data,
+    Ay: Data,
+{
     /// Interpolate the value at a given time
     /// This is used internally by [`Interp1D`].
-    fn interpolate(&self, time: &Array1<T>, y: &Array1<V>, time_target: T) -> RSCMResult<V>;
+    fn interpolate(
+        &self,
+        time: &ArrayBase<At, Ix1>,
+        y: &ArrayBase<Ay, Ix1>,
+        time_target: At::Elem,
+    ) -> RSCMResult<Ay::Elem>;
 }
 
 #[derive(Clone)]
@@ -97,12 +109,19 @@ pub enum InterpolationStrategy {
     Previous(Interp1DPrevious),
 }
 
-impl<T, V> Interp1DStrategy<T, V> for InterpolationStrategy
+impl<At, Ay> Interp1DStrategy<At, Ay> for InterpolationStrategy
 where
-    T: Float + Into<V>,
-    V: Float + Into<T>,
+    At: Data,
+    At::Elem: Float,
+    Ay: Data,
+    Ay::Elem: Float + From<At::Elem>,
 {
-    fn interpolate(&self, time: &Array1<T>, y: &Array1<V>, time_target: T) -> RSCMResult<V> {
+    fn interpolate(
+        &self,
+        time: &ArrayBase<At, Ix1>,
+        y: &ArrayBase<Ay, Ix1>,
+        time_target: At::Elem,
+    ) -> RSCMResult<Ay::Elem> {
         match self {
             InterpolationStrategy::Linear(strat) => strat.interpolate(time, y, time_target),
             InterpolationStrategy::Next(strat) => strat.interpolate(time, y, time_target),

@@ -16,28 +16,36 @@
 ///
 use crate::errors::RSCMResult;
 use num::Float;
-use numpy::ndarray::Array1;
-
+use numpy::ndarray::{ArrayBase, Data};
+use numpy::Ix1;
 use strategies::{Interp1DStrategy, InterpolationStrategy};
 
 pub mod strategies;
 
 /// Interpolator
-pub struct Interp1d<'a, T, V>
+pub struct Interp1d<At, Ay>
 where
-    T: Float,
+    At: Data,
+    Ay: Data,
 {
-    time: &'a Array1<T>,
-    y: &'a Array1<V>,
+    time: ArrayBase<At, Ix1>,
+    // TODO: Expand to support shape (t, ...)
+    y: ArrayBase<Ay, Ix1>,
     strategy: InterpolationStrategy,
 }
 
-impl<'a, T, V> Interp1d<'a, T, V>
+impl<'a, At, Ay> Interp1d<At, Ay>
 where
-    T: Float,
-    V: Float,
+    At: Data,
+    At::Elem: Float,
+    Ay: Data,
+    Ay::Elem: Float + From<At::Elem>,
 {
-    pub fn new(time: &'a Array1<T>, y: &'a Array1<V>, strategy: InterpolationStrategy) -> Self {
+    pub fn new(
+        time: ArrayBase<At, Ix1>,
+        y: ArrayBase<Ay, Ix1>,
+        strategy: InterpolationStrategy,
+    ) -> Self {
         Self { time, y, strategy }
     }
     pub fn with_strategy(&mut self, strategy: InterpolationStrategy) -> &mut Self {
@@ -45,8 +53,8 @@ where
         self
     }
 
-    pub fn interpolate(&self, time_target: T) -> RSCMResult<T> {
-        self.strategy.interpolate(self.time, self.y, time_target)
+    pub fn interpolate(&self, time_target: At::Elem) -> RSCMResult<Ay::Elem> {
+        self.strategy.interpolate(&self.time, &self.y, time_target)
     }
 }
 
@@ -65,8 +73,25 @@ mod tests {
         let expected = 3.0;
 
         let interpolator = Interp1d::new(
-            &years,
-            &data,
+            years,
+            data,
+            InterpolationStrategy::from(Interp1DNext::new(false)),
+        );
+        let result = interpolator.interpolate(query).unwrap();
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn interpolate_with_view() {
+        let data = array![1.0, 1.5, 2.0];
+        let years = Array::range(2020.0, 2023.0, 1.0);
+        let query = 2024.0;
+        let expected = 3.0;
+
+        let interpolator = Interp1d::new(
+            years.view(),
+            data,
             InterpolationStrategy::from(Interp1DNext::new(false)),
         );
         let result = interpolator.interpolate(query).unwrap();

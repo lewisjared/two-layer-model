@@ -1,7 +1,8 @@
 use crate::errors::RSCMResult;
 use crate::interpolate::strategies::{find_segment, Interp1DStrategy, SegmentOptions};
 use num::Float;
-use numpy::ndarray::Array1;
+use numpy::ndarray::{ArrayBase, Data};
+use numpy::Ix1;
 use std::cmp::min;
 
 /// Next-value 1D interpolation
@@ -45,12 +46,19 @@ impl Interp1DNext {
     }
 }
 
-impl<T, V> Interp1DStrategy<T, V> for Interp1DNext
+impl<At, Ay> Interp1DStrategy<At, Ay> for Interp1DNext
 where
-    T: Float + Into<V>,
-    V: Float + Into<T>,
+    At: Data,
+    At::Elem: Float,
+    Ay: Data,
+    Ay::Elem: Float,
 {
-    fn interpolate(&self, time: &Array1<T>, y: &Array1<V>, time_target: T) -> RSCMResult<V> {
+    fn interpolate(
+        &self,
+        time: &ArrayBase<At, Ix1>,
+        y: &ArrayBase<Ay, Ix1>,
+        time_target: At::Elem,
+    ) -> RSCMResult<Ay::Elem> {
         let segment_info = find_segment(time_target, time, self.extrapolate);
 
         let (segment_options, end_segment_idx) = match segment_info {

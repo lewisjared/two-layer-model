@@ -4,7 +4,7 @@ use crate::interpolate::Interp1d;
 use nalgebra::max;
 use num::{Float, ToPrimitive};
 use numpy::ndarray::prelude::*;
-use numpy::ndarray::{Array, Array1};
+use numpy::ndarray::{Array, Array1, ViewRepr};
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -190,7 +190,7 @@ where
 
 impl<T> Timeseries<T>
 where
-    T: Float,
+    T: Float + From<Time>,
 {
     pub fn new(
         values: Array1<T>,
@@ -266,26 +266,23 @@ where
             false => Option::from(self.values[self.latest.to_usize().unwrap()]),
         }
     }
-}
 
-// TODO: The interpolation routines currently require f32 values
-impl Timeseries<f32> {
     pub fn new_empty(
         time_axis: Arc<TimeAxis>,
         units: String,
         interpolation_strategy: InterpolationStrategy,
     ) -> Self {
         let mut arr = Array::zeros(time_axis.len());
-        arr.fill(f32::NAN);
+        arr.fill(T::nan());
 
         Self::new(arr, time_axis, units, interpolation_strategy)
     }
 
     /// Get the interpolator used to interpolate values onto a different timebase
-    pub fn interpolator(&self) -> Interp1d<Time, f32> {
+    pub fn interpolator(&self) -> Interp1d<ViewRepr<&Time>, ViewRepr<&T>> {
         Interp1d::new(
-            &self.time_axis.values(),
-            &self.values,
+            self.time_axis.values(),
+            self.values.view(),
             self.interpolation_strategy.clone(),
         )
     }
@@ -294,7 +291,7 @@ impl Timeseries<f32> {
     ///
     /// Linearly interpolates between values so doesn't currently do anything that is "spline"
     /// aware.
-    pub fn at_time(&self, time: Time) -> RSCMResult<f32> {
+    pub fn at_time(&self, time: Time) -> RSCMResult<T> {
         let interp = self.interpolator();
 
         interp.interpolate(time)
