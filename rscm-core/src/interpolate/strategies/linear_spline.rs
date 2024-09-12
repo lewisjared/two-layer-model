@@ -13,17 +13,17 @@ use std::cmp::min;
 ///
 /// The resulting curve is therefore only zero-order continuous.
 #[derive(Clone)]
-pub struct Interp1DLinearSpline {
+pub struct LinearSplineStrategy {
     extrapolate: bool,
 }
 
-impl Interp1DLinearSpline {
+impl LinearSplineStrategy {
     pub fn new(extrapolate: bool) -> Self {
         Self { extrapolate }
     }
 }
 
-impl<At, Ay> Interp1DStrategy<At, Ay> for Interp1DLinearSpline
+impl<At, Ay> Interp1DStrategy<At, Ay> for LinearSplineStrategy
 where
     At: Data,
     At::Elem: Float,
@@ -108,7 +108,7 @@ mod tests {
         let target = vec![0.0, 0.25, 0.5, 0.75, 1.0];
         let exps = vec![5.0, 6.5, 8.0, 8.5, 9.0];
 
-        let strategy = Interp1DLinearSpline::new(false);
+        let strategy = LinearSplineStrategy::new(false);
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
             println!("target={}, expected={}", t, e);
@@ -123,7 +123,7 @@ mod tests {
 
         let target = vec![-1.0, -0.01, 1.01, 1.2];
 
-        let strategy = Interp1DLinearSpline::new(false);
+        let strategy = LinearSplineStrategy::new(false);
 
         target.into_iter().for_each(|t| {
             println!("target={t}");
@@ -143,11 +143,12 @@ mod tests {
         let target = vec![-0.5, -0.25, 0.45, 1.5, 2.0];
         let exps = vec![2.0, 3.5, 7.7, 10.0, 11.0];
 
-        let strategy = Interp1DLinearSpline::new(true);
+        let strategy = LinearSplineStrategy::new(true);
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
-            println!("target={}, expected={}", t, e);
-            assert!(is_close!(strategy.interpolate(&time, &y, t).unwrap(), e));
+            let res = strategy.interpolate(&time, &y, t).unwrap();
+            println!("target={}, expected={}, found={}", t, e, res);
+            assert!(is_close!(res, e));
         })
     }
 }

@@ -1,6 +1,6 @@
 pub mod component;
 mod example_components;
-mod interpolate;
+pub mod interpolate;
 pub mod ivp;
 pub mod model;
 pub mod python;

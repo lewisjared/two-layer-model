@@ -1,5 +1,5 @@
 use crate::component::{Component, InputState, RequirementDefinition, State};
-use crate::interpolate::strategies::{Interp1DLinearSpline, InterpolationStrategy};
+use crate::interpolate::strategies::{InterpolationStrategy, LinearSplineStrategy};
 use crate::timeseries::{Time, TimeAxis, Timeseries};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use numpy::ndarray::Array;
@@ -228,7 +228,7 @@ impl ModelBuilder {
                     let mut ts = Timeseries::new_empty(
                         self.time_axis.clone(),
                         definition.unit,
-                        InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
+                        InterpolationStrategy::from(LinearSplineStrategy::new(true)),
                     );
                     ts.set(0, *self.initial_values.get(&definition.name));
 
@@ -257,7 +257,7 @@ impl ModelBuilder {
                     Timeseries::new_empty(
                         self.time_axis.clone(),
                         definition.unit,
-                        InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
+                        InterpolationStrategy::from(LinearSplineStrategy::new(true)),
                     ),
                     VariableType::Endogenous,
                 )

@@ -35,17 +35,17 @@ use numpy::Ix1;
 /// As a result, y(size(y)) is only used for (forward) extrapolation,
 /// it isn't actually used in the interpolation domain at all.
 #[derive(Clone)]
-pub struct Interp1DPrevious {
+pub struct PreviousStrategy {
     extrapolate: bool,
 }
 
-impl Interp1DPrevious {
+impl PreviousStrategy {
     pub fn new(extrapolate: bool) -> Self {
         Self { extrapolate }
     }
 }
 
-impl<At, Ay> Interp1DStrategy<At, Ay> for Interp1DPrevious
+impl<At, Ay> Interp1DStrategy<At, Ay> for PreviousStrategy
 where
     At: Data,
     At::Elem: Float,
@@ -95,7 +95,7 @@ mod tests {
         let target = vec![0.0, 0.25, 0.5, 0.75, 1.0];
         let exps = vec![5.0, 5.0, 8.0, 8.0, 9.0];
 
-        let strategy = Interp1DPrevious::new(false);
+        let strategy = PreviousStrategy::new(false);
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
             println!("target={}, expected={}", t, e);
@@ -110,7 +110,7 @@ mod tests {
 
         let target = vec![-1.0, -0.01, 1.01, 1.2];
 
-        let strategy = Interp1DPrevious::new(false);
+        let strategy = PreviousStrategy::new(false);
 
         target.into_iter().for_each(|t| {
             println!("target={t}");
@@ -130,7 +130,7 @@ mod tests {
         let target = vec![-1.0, 0.0, 0.25, 0.5, 0.75, 1.0, 1.2];
         let exps = vec![5.0, 5.0, 5.0, 8.0, 8.0, 9.0, 9.0];
 
-        let strategy = Interp1DPrevious::new(true);
+        let strategy = PreviousStrategy::new(true);
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
             let value = strategy.interpolate(&time, &y, t).unwrap();

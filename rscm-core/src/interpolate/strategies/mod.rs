@@ -4,12 +4,12 @@ pub mod previous;
 
 use crate::errors::{RSCMError, RSCMResult};
 use is_close::is_close;
-pub use linear_spline::Interp1DLinearSpline;
-pub use next::Interp1DNext;
+pub use linear_spline::LinearSplineStrategy;
+pub use next::NextStrategy;
 use num::{Float, ToPrimitive};
 use numpy::ndarray::{ArrayBase, Data};
 use numpy::Ix1;
-pub use previous::Interp1DPrevious;
+pub use previous::PreviousStrategy;
 use std::fmt::{Debug, Formatter};
 
 #[derive(PartialEq)]
@@ -104,9 +104,9 @@ where
 
 #[derive(Clone)]
 pub enum InterpolationStrategy {
-    Linear(Interp1DLinearSpline),
-    Next(Interp1DNext),
-    Previous(Interp1DPrevious),
+    Linear(LinearSplineStrategy),
+    Next(NextStrategy),
+    Previous(PreviousStrategy),
 }
 
 impl<At, Ay> Interp1DStrategy<At, Ay> for InterpolationStrategy
@@ -130,20 +130,20 @@ where
     }
 }
 
-impl From<Interp1DLinearSpline> for InterpolationStrategy {
-    fn from(value: Interp1DLinearSpline) -> Self {
+impl From<LinearSplineStrategy> for InterpolationStrategy {
+    fn from(value: LinearSplineStrategy) -> Self {
         InterpolationStrategy::Linear(value)
     }
 }
 
-impl From<Interp1DNext> for InterpolationStrategy {
-    fn from(value: Interp1DNext) -> Self {
+impl From<NextStrategy> for InterpolationStrategy {
+    fn from(value: NextStrategy) -> Self {
         InterpolationStrategy::Next(value)
     }
 }
 
-impl From<Interp1DPrevious> for InterpolationStrategy {
-    fn from(value: Interp1DPrevious) -> Self {
+impl From<PreviousStrategy> for InterpolationStrategy {
+    fn from(value: PreviousStrategy) -> Self {
         InterpolationStrategy::Previous(value)
     }
 }

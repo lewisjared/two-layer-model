@@ -1,5 +1,5 @@
 use crate::errors::RSCMResult;
-use crate::interpolate::strategies::{Interp1DLinearSpline, InterpolationStrategy};
+use crate::interpolate::strategies::{InterpolationStrategy, LinearSplineStrategy};
 use crate::interpolate::Interp1d;
 use nalgebra::max;
 use num::{Float, ToPrimitive};
@@ -215,23 +215,24 @@ where
             interpolation_strategy,
         }
     }
+
     /// Create a new timeseries from a set of values and a time axis
     ///
     /// The interpolation strategy for the timeseries defaults to linear with extrapolation.
-
     pub fn from_values(values: Array1<T>, time: Array1<Time>) -> Self {
         Self::new(
             values,
             Arc::new(TimeAxis::from_values(time)),
             "".to_string(),
-            InterpolationStrategy::from(Interp1DLinearSpline::new(true)),
+            InterpolationStrategy::from(LinearSplineStrategy::new(true)),
         )
     }
 
+    /// Replace the interpolation strategy
     pub fn with_interpolation_strategy(
         &mut self,
         interpolation_strategy: InterpolationStrategy,
-    ) -> &mut Self {
+    ) -> &Self {
         self.interpolation_strategy = interpolation_strategy;
         self
     }
@@ -301,7 +302,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpolate::strategies::{Interp1DPrevious, InterpolationStrategy};
+    use crate::interpolate::strategies::{InterpolationStrategy, PreviousStrategy};
 
     #[test]
     #[should_panic]
@@ -311,16 +312,20 @@ mod tests {
 
     #[test]
     fn get_value() {
-        let result = Timeseries::from_values(
+        let mut result = Timeseries::from_values(
             array![1.0, 2.0, 3.0, 4.0, 5.0],
             Array::range(2020.0, 2025.0, 1.0),
         );
+
+        result.with_interpolation_strategy(InterpolationStrategy::from(LinearSplineStrategy::new(
+            false,
+        )));
         assert_eq!(result.at_time(2020.0).unwrap(), 1.0);
         assert_eq!(result.at_time(2020.5).unwrap(), 1.5);
         assert_eq!(result.at_time(2021.0).unwrap(), 2.0);
 
         // Linear extrapolate isn't allowed by default
-        assert!(result.at_time(2025.0).is_err());
+        assert!(result.at_time(2026.0).is_err());
     }
 
     #[test]
@@ -328,15 +333,17 @@ mod tests {
         let data = array![1.0, 1.5, 2.0];
         let years = Array::range(2020.0, 2023.0, 1.0);
         let query = 2024.0;
-        let expected = 3.0;
 
         let mut timeseries = Timeseries::from_values(data, years);
 
+        // Default to linear interpolation
+        let result = timeseries.at_time(query).unwrap();
+        assert_eq!(result, 3.0);
+
+        // Replace interpolation strategy
         timeseries
-            .with_interpolation_strategy(InterpolationStrategy::from(Interp1DPrevious::new(true)));
-
-        let result = timeseries.interpolate(query).unwrap();
-
-        assert_eq!(result, expected);
+            .with_interpolation_strategy(InterpolationStrategy::from(PreviousStrategy::new(true)));
+        let result = timeseries.at_time(query).unwrap();
+        assert_eq!(result, 2.0);
     }
 }

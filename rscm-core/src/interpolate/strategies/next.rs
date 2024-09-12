@@ -36,17 +36,17 @@ use std::cmp::min;
 /// As a result, y(1) is only used for (backward) extrapolation,
 /// it isn't actually used in the interpolation domain at all.
 #[derive(Clone)]
-pub struct Interp1DNext {
+pub struct NextStrategy {
     extrapolate: bool,
 }
 
-impl Interp1DNext {
+impl NextStrategy {
     pub fn new(extrapolate: bool) -> Self {
         Self { extrapolate }
     }
 }
 
-impl<At, Ay> Interp1DStrategy<At, Ay> for Interp1DNext
+impl<At, Ay> Interp1DStrategy<At, Ay> for NextStrategy
 where
     At: Data,
     At::Elem: Float,
@@ -98,7 +98,7 @@ mod tests {
         let target = vec![0.0, 0.25, 0.5, 0.75, 1.0];
         let exps = vec![5.0, 8.0, 8.0, 9.0, 9.0];
 
-        let strategy = Interp1DNext::new(false);
+        let strategy = NextStrategy::new(false);
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
             println!("target={}, expected={}", t, e);
@@ -113,7 +113,7 @@ mod tests {
 
         let target = vec![-1.0, -0.01, 1.01, 1.2];
 
-        let strategy = Interp1DNext::new(false);
+        let strategy = NextStrategy::new(false);
 
         target.into_iter().for_each(|t| {
             println!("target={t}");
@@ -133,7 +133,7 @@ mod tests {
         let target = vec![-1.0, 0.0, 0.25, 0.5, 0.75, 1.0, 1.2];
         let exps = vec![5.0, 5.0, 8.0, 8.0, 9.0, 9.0, 9.0];
 
-        let strategy = Interp1DNext::new(true);
+        let strategy = NextStrategy::new(true);
 
         zip(target.into_iter(), exps.into_iter()).for_each(|(t, e)| {
             let value = strategy.interpolate(&time, &y, t).unwrap();

@@ -3,6 +3,7 @@ use crate::models::co2_erf::CO2ERFParameters;
 use numpy::array;
 use numpy::ndarray::Array;
 use rscm_core::component::InputState;
+use rscm_core::interpolate::strategies::{InterpolationStrategy, NextStrategy, PreviousStrategy};
 use rscm_core::model::ModelBuilder;
 use rscm_core::timeseries::{Time, TimeAxis, Timeseries};
 use std::sync::Arc;
@@ -51,11 +52,13 @@ fn test_carbon_cycle() {
             2100.0
         ])),
         "GtC / yr".to_string(),
+        InterpolationStrategy::from(PreviousStrategy::new(true)),
     );
     let temperature = Timeseries::new(
         array![temperature_value],
         Arc::new(TimeAxis::from_bounds(array![t_initial, 2100.0])),
         "K".to_string(),
+        InterpolationStrategy::from(NextStrategy::new(true)),
     );
 
     // Build a model consisting of a single carbon cycle component
@@ -106,6 +109,7 @@ fn test_coupled_model() {
             2100.0
         ])),
         "GtC / yr".to_string(),
+        InterpolationStrategy::from(PreviousStrategy::new(true)),
     );
 
     let mut builder = ModelBuilder::new();

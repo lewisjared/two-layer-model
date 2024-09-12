@@ -61,21 +61,21 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interpolate::strategies::next::Interp1DNext;
+    use crate::interpolate::strategies::next::NextStrategy;
     use numpy::array;
     use numpy::ndarray::Array;
 
     #[test]
-    fn interpolate() {
+    fn exterpolate() {
         let data = array![1.0, 1.5, 2.0];
         let years = Array::range(2020.0, 2023.0, 1.0);
         let query = 2024.0;
-        let expected = 3.0;
+        let expected = 2.0;
 
         let interpolator = Interp1d::new(
             years,
             data,
-            InterpolationStrategy::from(Interp1DNext::new(false)),
+            InterpolationStrategy::from(NextStrategy::new(true)),
         );
         let result = interpolator.interpolate(query).unwrap();
 
@@ -87,12 +87,12 @@ mod tests {
         let data = array![1.0, 1.5, 2.0];
         let years = Array::range(2020.0, 2023.0, 1.0);
         let query = 2024.0;
-        let expected = 3.0;
+        let expected = 2.0;
 
         let interpolator = Interp1d::new(
             years.view(),
             data,
-            InterpolationStrategy::from(Interp1DNext::new(false)),
+            InterpolationStrategy::from(NextStrategy::new(true)),
         );
         let result = interpolator.interpolate(query).unwrap();
 
