@@ -1,3 +1,14 @@
+/// A model consists of a series of coupled components which are solved together.
+/// The model orchastrates the passing of state between different components.
+/// Each component is solved for a given time step in an order determined by their
+/// dependencies.
+/// Once all components and state is solved for, the model will move to the next time step.
+/// The state from previous steps is preserved as it is useful as output or in the case where
+/// a component needs previous values.
+///
+/// The model also holds all of the exogenous variables required by the model.
+/// The required variables are identified when building the model.
+/// If a required exogenous variable isn't provided, then the build step will fail.
 use crate::component::{Component, InputState, RequirementDefinition, State};
 use crate::interpolate::strategies::{InterpolationStrategy, LinearSplineStrategy};
 use crate::timeseries::{Time, TimeAxis, Timeseries};
@@ -220,34 +231,38 @@ impl ModelBuilder {
 
         // Create the timeseries collection using the information from the components
         let mut collection = TimeseriesCollection::new();
-        for (_, definition) in definitions {
+        for (name, definition) in definitions {
+            assert_eq!(definition.name, name);
+
             if exogenous.contains(&definition.name) {
                 // Exogenous variable is expected to be supplied
-                if self.initial_values.has(&definition.name) {
+                if self.initial_values.has(&name) {
                     // An initial value was provided
                     let mut ts = Timeseries::new_empty(
                         self.time_axis.clone(),
                         definition.unit,
                         InterpolationStrategy::from(LinearSplineStrategy::new(true)),
                     );
-                    ts.set(0, *self.initial_values.get(&definition.name));
+                    ts.set(0, *self.initial_values.get(&name));
 
                     // Note that timeseries that are initialised are defined as Endogenous
                     // all but the first time point come from the model.
                     // This could potentially be defined as a different VariableType if needed.
-                    collection.add_timeseries(definition.name, ts, VariableType::Endogenous)
+                    collection.add_timeseries(name, ts, VariableType::Endogenous)
                 } else {
                     // Check if the timeseries is available in the provided exogenous variables
                     // todo: This should consume the timeseries and then interpolate onto the correct timeaxis
-                    let timeseries = self.exogenous_variables.get_timeseries(&definition.name);
+                    let timeseries = self.exogenous_variables.get_timeseries(&name);
 
                     match timeseries {
                         Some(timeseries) => collection.add_timeseries(
-                            definition.name,
-                            timeseries.to_owned(),
+                            name,
+                            timeseries
+                                .to_owned()
+                                .interpolate_into(self.time_axis.clone()),
                             VariableType::Exogenous,
                         ),
-                        None => println!("Requires data for {}", definition.name), // None => panic!("No exogenous data for {}", definition.name),
+                        None => println!("Requires data for {}", name), // None => panic!("No exogenous data for {}", definition.name),
                     }
                 }
             } else {
@@ -269,17 +284,37 @@ impl ModelBuilder {
     }
 }
 
+/// A coupled set of components that are solved on a common time axis.
+///
+/// These components are solved over time steps defined by the ['time_axis'].
+/// Components may pass state between themselves.
+/// Each component may require information from other components to be solved (endogenous) or
+/// predefined data (exogenous).
+///
+/// For example, a component to calculate the Effective Radiative Forcing(ERF) of CO_2 may
+/// require CO_2 concentrations as input state and provide CO_2 ERF.
+/// The component is agnostic about where/how that state is defined.
+/// If the model has no components which provide CO_2 concentrations,
+/// then a CO_2 concentration timeseries must be defined externally.
+/// If the model also contains a carbon cycle component which produced CO_2 concentrations,
+/// then the ERF component will be solved after the carbon cycle model.
 pub struct Model {
+    /// A directed graph with components as nodes and the edges defining the state dependencies
+    /// between nodes.
+    /// This graph is traversed on every time step to ensure that any state dependencies are
+    /// solved before another component needs the state.
     components: Graph<Option<C>, Option<RequirementDefinition>>,
+    /// The base node of the graph from where to begin traversing.
     initial_node: NodeIndex,
+    /// The model state
+    ///
+    /// Variable names within the model are unique and these variable names are used by
+    /// components to request state.
     collection: TimeseriesCollection,
     time_axis: Arc<TimeAxis>,
     time_index: usize,
 }
 
-/// A model represents a collection of components that can be solved together
-/// Each component may require information from other components to be solved (endrogenous) or
-/// predefined data (exogenous).
 impl Model {
     pub fn new(
         components: Graph<Option<C>, Option<RequirementDefinition>>,
@@ -304,7 +339,13 @@ impl Model {
         self.time_axis.at_bounds(self.time_index).unwrap()
     }
 
-    fn process_node(&mut self, component: C) {
+    /// Solve a single component for the current timestep
+    ///
+    /// The updated state from the component is then pushed into the model's timeseries collection
+    /// to be later used by other components.
+    /// The output state defines the values at the next time index as it represents the state
+    /// at the start of the next timestep.
+    fn step_model_component(&mut self, component: C) {
         let input_state = component.extract_state(&self.collection, self.current_time());
 
         let (start, end) = self.current_time_bounds();
@@ -314,6 +355,9 @@ impl Model {
         match result {
             Ok(output_state) => output_state.iter().for_each(|(key, value)| {
                 let ts = self.collection.get_timeseries_mut(key).unwrap();
+                // The next time index is used as this output state represents the value of a
+                // variable at the end of the current time step.
+                // This is the same as the start of the next timestep.
                 ts.set(self.time_index + 1, *value)
             }),
             Err(err) => {
@@ -334,14 +378,16 @@ impl Model {
 
             if c.is_some() {
                 let c = c.as_ref().unwrap().clone();
-                self.process_node(c)
+                self.step_model_component(c)
             }
         }
     }
 
     /// Steps the model forward one time step
+    ///
+    /// This solves the current time step and then updates the index.
     pub fn step(&mut self) {
-        assert!(self.time_index < self.time_axis.len());
+        assert!(self.time_index < self.time_axis.len() - 1);
         self.step_model();
 
         self.time_index += 1;
@@ -349,7 +395,7 @@ impl Model {
 
     /// Steps the model until the end of the time axis
     pub fn run(&mut self) {
-        while self.time_index < self.time_axis.len() {
+        while self.time_index < self.time_axis.len() - 1 {
             self.step();
         }
     }
@@ -374,6 +420,10 @@ impl Model {
             },
         )
     }
+
+    pub fn finished(&self) -> bool {
+        self.time_index == self.time_axis.len() - 1
+    }
 }
 
 #[cfg(test)]
@@ -381,17 +431,6 @@ mod tests {
     use super::*;
     use crate::example_components::{TestComponent, TestComponentParameters};
     use numpy::ndarray::Array;
-
-    #[test]
-    fn build() {
-        let time_axis = TimeAxis::from_values(Array::range(2020.0, 2025.0, 1.0));
-        let mut model = ModelBuilder::new()
-            .with_time_axis(time_axis)
-            .with_component(Arc::new(TestComponent::from_parameters(
-                TestComponentParameters { p: 0.5 },
-            )))
-            .build();
-    }
 
     #[test]
     fn step() {
@@ -409,7 +448,24 @@ mod tests {
         assert_eq!(model.time_index, 2);
         assert_eq!(model.current_time(), 2022.0);
         model.run();
-        assert_eq!(model.time_index, 5);
+        assert_eq!(model.time_index, 4);
+        assert!(model.finished());
+
+        let concentrations = model
+            .collection
+            .get_timeseries("Concentrations|CO2")
+            .unwrap();
+
+        println!("{:?}", concentrations.values());
+
+        // The first value for an endogenous timeseries without a y0 value is NaN.
+        // This is because the values in the timeseries represents the state at the start
+        // of a time step.
+        // Since the values from t-1 aren't known we can't solve for y0
+        assert!(concentrations.at(0).unwrap().is_nan());
+        let mut iter = concentrations.values().into_iter();
+        iter.next(); // Skip the first value
+        assert!(iter.all(|x| !x.is_nan()));
     }
 
     #[test]

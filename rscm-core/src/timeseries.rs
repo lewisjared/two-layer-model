@@ -54,7 +54,7 @@ impl TimeAxis {
     /// assert_eq!(ta.at_bounds(2).unwrap(), expected);
     /// ```
     pub fn from_values(values: Array1<Time>) -> Self {
-        assert!(values.len() > 2);
+        assert!(values.len() >= 2);
         let step = values[values.len() - 1] - values[values.len() - 2];
 
         let mut bounds = Array::zeros(values.len() + 1);
@@ -290,12 +290,77 @@ where
 
     /// Get the value at a given time
     ///
-    /// Linearly interpolates between values so doesn't currently do anything that is "spline"
-    /// aware.
+    /// This method interpolates using the current interpolation strategy to determine
+    /// the value at `time`.
     pub fn at_time(&self, time: Time) -> RSCMResult<T> {
         let interp = self.interpolator();
 
         interp.interpolate(time)
+    }
+
+    /// Get the value of the timeseries at a given time index
+    ///
+    /// # Examples
+    /// ```rust
+    /// use numpy::array;
+    /// use numpy::ndarray::Array;
+    /// use rscm_core::timeseries::{Timeseries};
+    ///
+    /// let timeseries = Timeseries::from_values(array![1.0, 2.0, 3.0, 4.0, 5.0], Array::range(2000.0, 2050.0, 10.0));
+    ///
+    /// assert_eq!(timeseries.len(), 5);
+    /// assert_eq!(timeseries.at(0).unwrap(), 1.0);
+    /// assert_eq!(timeseries.at(1).unwrap(), 2.0);
+    /// assert!(timeseries.at(12).is_none());
+    /// ```
+    pub fn at(&self, index: usize) -> Option<T> {
+        if index < self.len() {
+            Option::from(self.values[index])
+        } else {
+            None
+        }
+    }
+
+    /// Interpolate a timeseries onto a new time axis
+    ///
+    /// The interpolation strategy will determine how the interpolation is performed or if
+    /// extrapolation is allowed.
+    ///
+    /// This currently panics if the interpolation fails for any reason.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use std::sync::Arc;
+    /// use numpy::array;
+    /// use numpy::ndarray::Array;
+    /// use rscm_core::timeseries::{TimeAxis, Timeseries};
+    ///
+    /// let timeseries = Timeseries::from_values(array![1.0, 2.0, 3.0, 4.0, 5.0], Array::range(2000.0, 2050.0, 10.0));
+    ///
+    /// let new_timeseries = timeseries.interpolate_into(Arc::new(TimeAxis::from_values(Array::range(2000.0, 2020.0, 5.0))));
+    /// assert_eq!(new_timeseries.len(), 4);
+    /// assert_eq!(new_timeseries.at(0).unwrap(), 1.0);
+    /// assert_eq!(new_timeseries.at(1).unwrap(), 1.5);
+    /// ```
+    pub fn interpolate_into(self, new_time_axis: Arc<TimeAxis>) -> Self {
+        let mut values = Array1::zeros(new_time_axis.len());
+        let interp = self.interpolator();
+
+        zip(new_time_axis.values().iter(), values.iter_mut()).for_each(|(t, value)| {
+            *value = interp.interpolate(*t).unwrap();
+        });
+
+        Self::new(
+            values,
+            new_time_axis,
+            self.units,
+            self.interpolation_strategy,
+        )
+    }
+
+    pub fn values(&self) -> ArrayView1<T> {
+        self.values.view()
     }
 }
 
