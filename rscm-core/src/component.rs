@@ -171,7 +171,7 @@ pub trait Component: Debug {
 
         self.input_names().into_iter().for_each(|name| {
             let ts = collection
-                .get(name.as_str())
+                .get_by_name(name.as_str())
                 .expect(format!("No timeseries with variable='{}'", name).as_str());
 
             let result = match ts.variable_type {

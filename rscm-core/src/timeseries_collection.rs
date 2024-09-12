@@ -1,6 +1,5 @@
 use crate::timeseries::Timeseries;
-use std::collections::hash_map::IntoValues;
-use std::collections::HashMap;
+use std::vec::IntoIter;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Eq, Debug)]
 #[pyo3::pyclass]
@@ -22,13 +21,13 @@ pub struct TimeseriesItem {
 /// Allows for easy access to time series data by name across the whole model
 #[derive(Debug)]
 pub struct TimeseriesCollection {
-    timeseries: HashMap<String, TimeseriesItem>,
+    timeseries: Vec<TimeseriesItem>,
 }
 
 impl TimeseriesCollection {
     pub fn new() -> Self {
         Self {
-            timeseries: HashMap::new(),
+            timeseries: Vec::new(),
         }
     }
 
@@ -42,38 +41,36 @@ impl TimeseriesCollection {
         timeseries: Timeseries<f32>,
         variable_type: VariableType,
     ) {
-        if self.timeseries.contains_key(&name) {
+        if self.timeseries.iter().any(|x| x.name == name) {
             panic!("timeseries {} already exists", name)
         }
-        self.timeseries.insert(
-            name.clone(),
-            TimeseriesItem {
-                timeseries,
-                name,
-                variable_type,
-            },
-        );
+        self.timeseries.push(TimeseriesItem {
+            timeseries,
+            name,
+            variable_type,
+        });
     }
 
-    pub fn get(&self, name: &str) -> Option<&TimeseriesItem> {
-        self.timeseries.get(name)
+    pub fn get_by_name(&self, name: &str) -> Option<&TimeseriesItem> {
+        self.timeseries.iter().find(|x| x.name == name)
     }
 
-    pub fn get_timeseries(&self, name: &str) -> Option<&Timeseries<f32>> {
-        self.timeseries.get(name).map(|item| &item.timeseries)
+    pub fn get_timeseries_by_name(&self, name: &str) -> Option<&Timeseries<f32>> {
+        self.get_by_name(name).map(|item| &item.timeseries)
     }
-    pub fn get_timeseries_mut(&mut self, name: &str) -> Option<&mut Timeseries<f32>> {
+    pub fn get_timeseries_by_name_mut(&mut self, name: &str) -> Option<&mut Timeseries<f32>> {
         self.timeseries
-            .get_mut(name)
+            .iter_mut()
+            .find(|x| x.name == name)
             .map(|item| &mut item.timeseries)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &TimeseriesItem> {
-        self.timeseries.values()
+        self.timeseries.iter()
     }
 
-    pub fn into_iter(self) -> IntoValues<String, TimeseriesItem> {
-        self.timeseries.into_values()
+    pub fn into_iter(self) -> IntoIter<TimeseriesItem> {
+        self.timeseries.into_iter()
     }
 }
 
