@@ -1,4 +1,4 @@
-use crate::models::carbon_cycle::CarbonCycleParameters;
+use crate::models::carbon_cycle::{CarbonCycleParameters, SolverOptions};
 use crate::models::co2_erf::CO2ERFParameters;
 use numpy::array;
 use numpy::ndarray::Array;
@@ -16,7 +16,7 @@ fn test_carbon_cycle() {
     let tau = 20.3;
     let conc_pi = 280.0;
     let conc_initial = 280.0;
-    let t_initial = 1750.0;
+    let t_initial = 1800.0;
     let emissions_level = 10.0;
     let step_year = 1850.0;
     //Can use any temperature as the temperature feedback is set to zero
@@ -43,7 +43,7 @@ fn test_carbon_cycle() {
     };
 
     let emissions = Timeseries::new(
-        array![0.0, 0.0, step_size, step_size],
+        array![0.0, 0.0, emissions_level, emissions_level],
         Arc::new(TimeAxis::from_bounds(array![
             t_initial,
             (t_initial + step_year) / 2.0,
@@ -68,7 +68,8 @@ fn test_carbon_cycle() {
                 tau,
                 conc_pi,
                 alpha_temperature,
-            }),
+            })
+            .with_solver_options(SolverOptions { step_size }),
         ))
         .with_initial_values(InputState::from_vectors(
             vec![0.0, 0.0, conc_initial],
@@ -78,12 +79,40 @@ fn test_carbon_cycle() {
                 "Atmospheric Concentration|CO2".to_string(),
             ],
         ))
-        .with_time_axis(time_axis)
+        .with_time_axis(time_axis.clone())
         .with_exogenous_variable("Emissions|CO2|Anthropogenic", emissions)
         .with_exogenous_variable("Surface Temperature", temperature)
         .build();
 
-    model.run()
+    model.run();
+
+    let co2_conc = model
+        .timeseries()
+        .get_timeseries("Atmospheric Concentration|CO2")
+        .unwrap();
+
+    let co2_emissions = model
+        .timeseries()
+        .get_timeseries("Emissions|CO2|Anthropogenic")
+        .unwrap();
+    let expected_concentrations: Vec<f32> = time_axis
+        .values()
+        .iter()
+        .map(|t| match *t < step_year {
+            true => get_exp_values_before_step(*t),
+            false => get_exp_values_after_step(*t),
+        })
+        .collect();
+    let expected_emissions: Vec<f32> = time_axis
+        .values()
+        .iter()
+        .map(|t| match *t < step_year {
+            true => 0.0,
+            false => emissions_level,
+        })
+        .collect();
+    assert_eq!(co2_emissions.values().to_vec(), expected_emissions);
+    assert_eq!(co2_conc.values().to_vec(), expected_concentrations);
 }
 
 #[test]

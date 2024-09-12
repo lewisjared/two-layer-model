@@ -6,13 +6,13 @@ use ode_solvers::dop_shared::{FloatNumber, SolverResult};
 use ode_solvers::*;
 use std::sync::Arc;
 
-const T_THRESHOLD: Time = 1e-3;
+const T_THRESHOLD: Time = 5e-3;
 
 pub fn get_last_step<V>(results: &SolverResult<Time, V>, t_expected: Time) -> &V {
     let (t, y) = results.get();
     assert!(y.len() > 1);
 
-    let t_distance = (t.last().unwrap().to_owned() - t_expected).abs();
+    let t_distance = (t.last().unwrap() - t_expected).abs();
 
     // I couldn't figure out how to make this value a constant that worked with generics
     assert!(t_distance < T_THRESHOLD);

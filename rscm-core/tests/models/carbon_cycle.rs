@@ -24,13 +24,29 @@ pub struct CarbonCycleParameters {
 }
 
 #[derive(Debug, Clone)]
+pub struct SolverOptions {
+    pub step_size: f32,
+}
+
+#[derive(Debug, Clone)]
 pub struct CarbonCycleComponent {
     parameters: CarbonCycleParameters,
+    solver_options: SolverOptions,
 }
 
 impl CarbonCycleComponent {
     pub fn from_parameters(parameters: CarbonCycleParameters) -> Self {
-        Self { parameters }
+        Self {
+            parameters,
+            solver_options: SolverOptions { step_size: 0.1 },
+        }
+    }
+
+    pub fn with_solver_options(self, solver_options: SolverOptions) -> Self {
+        Self {
+            parameters: self.parameters,
+            solver_options,
+        }
     }
 }
 
@@ -81,15 +97,11 @@ impl Component for CarbonCycleComponent {
         );
 
         let solver = IVPBuilder::new(Arc::new(self.to_owned()), input_state.clone(), y0);
-        println!("Solving {:?} with state: {:?}", self, input_state);
 
-        let mut solver = solver.to_rk4(t_current, t_next, 0.1);
-        let stats = solver.integrate().expect("Failed solving");
+        let mut solver = solver.to_rk4(t_current, t_next, self.solver_options.step_size);
+        solver.integrate().expect("Failed solving");
 
         let results = get_last_step(solver.results(), t_next);
-
-        println!("Stats {:?}", stats);
-        println!("Results {:?}", results);
 
         let mut output = HashMap::new();
         output.insert("Atmospheric Concentration|CO2".to_string(), results[0]);
