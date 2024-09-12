@@ -507,7 +507,6 @@ dependencies = [
  "nalgebra",
  "ndarray-interp",
  "num",
- "num-traits",
  "numpy",
  "ode_solvers",
  "petgraph",
