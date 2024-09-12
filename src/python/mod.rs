@@ -51,11 +51,12 @@ impl PyTwoLayerModel {
 }
 #[pymodule]
 #[pyo3(name = "_lib")]
-fn tlm(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn two_layer_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(core))?;
     m.add_function(wrap_pyfunction!(add, m)?)?;
     m.add_function(wrap_pyfunction!(py_solve_tlm, m)?)?;
     m.add_class::<PyTwoLayerModel>()?;
+
     Ok(())
 }
 

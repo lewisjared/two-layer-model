@@ -6,6 +6,7 @@ pub mod timeseries;
 
 #[pymodule]
 pub fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<timeseries::PyTimeAxis>()?;
     m.add_class::<timeseries::PyTimeseries>()?;
     Ok(())
 }
