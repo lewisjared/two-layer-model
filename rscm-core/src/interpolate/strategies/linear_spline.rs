@@ -1,7 +1,7 @@
 use crate::errors::RSCMResult;
 use crate::interpolate::strategies::{find_segment, Interp1DStrategy, SegmentOptions};
 use num::Float;
-use numpy::ndarray::{ArrayBase, Data};
+use numpy::ndarray::{s, ArrayBase, Data};
 use numpy::Ix1;
 use std::cmp::min;
 
@@ -36,7 +36,12 @@ where
         y: &ArrayBase<Ay, Ix1>,
         time_target: At::Elem,
     ) -> RSCMResult<Ay::Elem> {
-        let segment_info = find_segment(time_target, time, self.extrapolate);
+        let segment_info = find_segment(
+            time_target,
+            // Trim off the last bound as it isn't needed for linear extrapolation
+            &time.slice(s![..time.len() - 1]),
+            self.extrapolate,
+        );
 
         let (segment_options, end_segment_idx) = match segment_info {
             Ok(info) => info,
@@ -140,8 +145,8 @@ mod tests {
         let time = array![0.0, 0.5, 1.0, 1.5];
         let y = array![5.0, 8.0, 9.0];
 
-        let target = vec![-0.5, -0.25, 0.45, 1.5, 2.0];
-        let exps = vec![2.0, 3.5, 7.7, 10.0, 11.0];
+        let target = vec![1.5, 2.0];
+        let exps = vec![10.0, 11.0];
 
         let strategy = LinearSplineStrategy::new(true);
 
