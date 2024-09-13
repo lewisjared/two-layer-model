@@ -25,7 +25,7 @@ pub struct PyTwoLayerModel(pub TwoLayerModel);
 #[pymethods]
 impl PyTwoLayerModel {
     #[new]
-    fn from_parameters<'py>(
+    fn from_parameters(
         lambda0: f32,
         a: f32,
         efficacy: f32,

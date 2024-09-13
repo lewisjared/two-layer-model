@@ -17,7 +17,7 @@ pub fn get_last_step<V>(results: &SolverResult<Time, V>, t_expected: Time) -> &V
     // I couldn't figure out how to make this value a constant that worked with generics
     assert!(t_distance < T_THRESHOLD);
 
-    let last_timestep = y.get(y.len() - 1).unwrap();
+    let last_timestep = y.last().unwrap();
 
     last_timestep
 }

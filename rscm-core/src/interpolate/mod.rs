@@ -34,7 +34,7 @@ where
     strategy: InterpolationStrategy,
 }
 
-impl<'a, At, Ay> Interp1d<At, Ay>
+impl<At, Ay> Interp1d<At, Ay>
 where
     At: Data,
     At::Elem: Float,

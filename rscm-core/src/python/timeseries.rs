@@ -9,12 +9,12 @@ pub struct PyTimeAxis(pub TimeAxis);
 #[pymethods]
 impl PyTimeAxis {
     #[staticmethod]
-    fn from_values<'py>(values: Bound<'py, PyArray1<Time>>) -> Self {
+    fn from_values(values: Bound<PyArray1<Time>>) -> Self {
         Self(TimeAxis::from_values(values.to_owned_array()))
     }
 
     #[staticmethod]
-    fn from_bounds<'py>(bounds: Bound<'py, PyArray1<Time>>) -> Self {
+    fn from_bounds(bounds: Bound<PyArray1<Time>>) -> Self {
         Self(TimeAxis::from_bounds(bounds.to_owned_array()))
     }
 

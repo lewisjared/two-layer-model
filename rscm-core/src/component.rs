@@ -24,7 +24,7 @@ pub struct InputState {
 impl InputState {
     pub fn from_vectors(values: Vec<f32>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
-        let state: Vec<(String, f32)> = zip(names.into_iter(), values.into_iter()).collect();
+        let state: Vec<(String, f32)> = zip(names, values).collect();
         Self { state }
     }
 
@@ -45,7 +45,7 @@ impl InputState {
     }
 
     pub fn has(&self, name: &str) -> bool {
-        self.state.iter().find(|(n, _)| *n == name).is_some()
+        self.state.iter().any(|(n, _)| *n == name)
     }
 
     /// Merge state into this state
@@ -119,7 +119,7 @@ impl RequirementDefinition {
 /// Each component contains:
 /// * parameters: Time invariant constants used to parameterize the components physics
 /// * inputs: State information required to solve the model. This come from either other
-/// components as part of a coupled system or from exogenous data.
+///   components as part of a coupled system or from exogenous data.
 /// * outputs: Information that is solved by the component
 
 pub trait Component: Debug {

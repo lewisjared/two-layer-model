@@ -35,10 +35,8 @@ where
     let needs_extrap_backward = !needs_extrap_forward & (end_segment_idx == 0);
 
     // Check if we can fast return because there is an exact match
-    if !needs_extrap_forward {
-        if is_close!(time_bounds[end_segment_idx], target) {
-            return Ok((SegmentOptions::OnBoundary, end_segment_idx));
-        }
+    if !needs_extrap_forward && is_close!(time_bounds[end_segment_idx], target) {
+        return Ok((SegmentOptions::OnBoundary, end_segment_idx));
     }
 
     let needs_extrap = needs_extrap_backward | needs_extrap_forward;
@@ -76,7 +74,7 @@ where
         .as_slice()
         .unwrap()
         // Have to use binary_search_by as
-        .binary_search_by(|v| v.partial_cmp(&target).expect("Couldn't compare values"));
+        .binary_search_by(|v| v.partial_cmp(target).expect("Couldn't compare values"));
 
     result.unwrap_or_else(|res| res)
 }

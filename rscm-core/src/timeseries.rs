@@ -91,6 +91,10 @@ impl TimeAxis {
         self.bounds.len() - 1
     }
 
+    pub fn is_empty(&self) -> bool {
+        false
+    }
+
     /// Get the number of bounds
     ///
     /// This is always 1 larger than the number of values
@@ -239,6 +243,10 @@ where
 
     pub fn len(&self) -> usize {
         self.values.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        false
     }
 
     /// Set a value at time_index
