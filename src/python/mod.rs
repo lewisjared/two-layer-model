@@ -1,6 +1,5 @@
 use crate::two_layer::{TwoLayerComponent, TwoLayerComponentParameters};
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
 use pyo3::wrap_pymodule;
 use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction};
 use rscm_core::component::{Component, InputState};
@@ -20,7 +19,7 @@ pub struct PyTwoLayerComponent(pub TwoLayerComponent);
 
 #[pymethods]
 impl PyTwoLayerComponent {
-    #[new]
+    #[staticmethod]
     fn from_parameters(
         lambda0: FloatValue,
         a: FloatValue,

@@ -8,7 +8,14 @@ use numpy::ndarray::{Array, Array1, ViewRepr};
 use std::iter::zip;
 use std::sync::Arc;
 
+/// The type of float used in time calculations
+///
+/// Currently, this should be the same as ['FloatValue'] and anything else is untested.
 pub type Time = f64;
+
+/// Type of float to use in timeseries and calculations within rscm-core.
+///
+/// This is a placeholder to make it easier to be able to use a generic representation of value.
 pub type FloatValue = f64;
 
 #[derive(Clone, Debug)]
@@ -49,9 +56,9 @@ impl TimeAxis {
     ///
     /// ```rust
     /// use numpy::array;
-    /// use rscm_core::timeseries::TimeAxis;
+    /// use rscm_core::timeseries::{Time, TimeAxis};
     /// let ta = TimeAxis::from_values(array![1.0, 2.0, 3.0]);
-    /// let expected: (f32, f32) = (3.0, 4.0);
+    /// let expected: (Time, Time) = (3.0, 4.0);
     /// assert_eq!(ta.at_bounds(2).unwrap(), expected);
     /// ```
     pub fn from_values(values: Array1<Time>) -> Self {

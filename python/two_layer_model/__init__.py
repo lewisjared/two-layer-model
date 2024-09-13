@@ -1,2 +1,1 @@
-def hello() -> str:
-    return "Hello from two-layer-model!"
+from two_layer_model._lib import TwoLayerComponent  # noqa

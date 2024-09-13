@@ -40,7 +40,7 @@ impl IVP<Time, ModelState> for TwoLayerComponent {
     ) {
         let temperature_surface = y[0];
         let temperature_deep = y[1];
-        let erf = input_state.get("erf");
+        let erf = input_state.get("Effective Radiative Forcing");
 
         let temperature_difference = temperature_surface - temperature_deep;
 
@@ -109,45 +109,40 @@ impl Component for TwoLayerComponent {
     }
 }
 
-/// Solves the two layer component in isolation
-pub fn solve_tlm() -> Result<OutputState, String> {
-    // Initialise the model
-    let model = TwoLayerComponent::from_parameters(TwoLayerComponentParameters {
-        lambda0: 0.5,
-        a: 0.01,
-        efficacy: 0.5,
-        eta: 0.1,
-        heat_capacity_surface: 1.0,
-        heat_capacity_deep: 100.0,
-    });
-
-    let mut ts_collection = TimeseriesCollection::new();
-    ts_collection.add_timeseries(
-        "Effective Radiative Forcing".to_string(),
-        Timeseries::from_values(
-            array![1.0, 1.5, 2.0, 2.0],
-            array![1848.0, 1849.0, 1850.0, 1900.0],
-        ),
-        VariableType::Endogenous,
-    );
-
-    let input_state = model.extract_state(&ts_collection, 1848.0);
-    println!("Input: {:?}", input_state);
-
-    // Create the solver
-    let output_state = model.solve(1848.0, 1849.0, &input_state);
-
-    println!("Output: {:?}", output_state);
-    output_state
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn it_works() {
-        let res = solve_tlm().unwrap();
-        assert_eq!(*res.get("Surface Temperature"), 3.0);
+        // Solve the two layer component in isolation
+        let model = TwoLayerComponent::from_parameters(TwoLayerComponentParameters {
+            lambda0: 0.5,
+            a: 0.01,
+            efficacy: 0.5,
+            eta: 0.1,
+            heat_capacity_surface: 1.0,
+            heat_capacity_deep: 100.0,
+        });
+
+        let mut ts_collection = TimeseriesCollection::new();
+        ts_collection.add_timeseries(
+            "Effective Radiative Forcing".to_string(),
+            Timeseries::from_values(
+                array![1.0, 1.5, 2.0, 2.0],
+                array![1848.0, 1849.0, 1850.0, 1900.0],
+            ),
+            VariableType::Exogenous,
+        );
+
+        let input_state = model.extract_state(&ts_collection, 1848.0);
+        println!("Input: {:?}", input_state);
+
+        // Create the solver
+        let output_state = model.solve(1848.0, 1849.0, &input_state);
+
+        println!("Output: {:?}", output_state);
+        let output_state = output_state.unwrap();
+        assert_eq!(*output_state.get("Surface Temperature"), 0.5);
     }
 }
