@@ -11,7 +11,8 @@ workspace = ".."
 [dependencies]
 numpy = "0.21.0"
 ode_solvers = "0.4.0"
-nalgebra = "*"
+# Pin nlgebra until new release of ode_solvers
+nalgebra = "0.32.6"
 petgraph = "0.6.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
