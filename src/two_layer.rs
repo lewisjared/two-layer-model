@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use numpy::ndarray::array;
 use ode_solvers::*;
 use std::sync::Arc;
 
@@ -8,8 +7,7 @@ use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use rscm_core::ivp::{IVPBuilder, IVP};
-use rscm_core::timeseries::{FloatValue, Time, Timeseries};
-use rscm_core::timeseries_collection::{TimeseriesCollection, VariableType};
+use rscm_core::timeseries::{FloatValue, Time};
 
 // Define some types that are used by OdeSolvers
 type ModelState = Vector3<FloatValue>;
@@ -112,6 +110,9 @@ impl Component for TwoLayerComponent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use numpy::array;
+    use rscm_core::timeseries::Timeseries;
+    use rscm_core::timeseries_collection::{TimeseriesCollection, VariableType};
 
     #[test]
     fn it_works() {
