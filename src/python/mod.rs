@@ -57,7 +57,22 @@ fn two_layer_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_solve_tlm, m)?)?;
     m.add_class::<PyTwoLayerModel>()?;
 
+    set_path(m, "two_layer_model._lib.core", "core")?;
+
     Ok(())
+}
+
+fn set_path(m: &Bound<'_, PyModule>, path: &str, module: &str) -> PyResult<()> {
+    m.py().run_bound(
+        &format!(
+            "\
+import sys
+sys.modules['{path}'] = {module}
+    "
+        ),
+        None,
+        Some(&m.dict()),
+    )
 }
 
 // Define a function to gather stub information.
