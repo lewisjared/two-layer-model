@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use numpy::ndarray::array;
 use ode_solvers::*;
 use std::sync::Arc;

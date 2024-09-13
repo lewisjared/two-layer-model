@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
