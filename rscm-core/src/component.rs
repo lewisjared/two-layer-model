@@ -53,7 +53,7 @@ impl InputState {
     /// Overrides any existing values with the same name
     pub fn merge(&mut self, state: InputState) -> &mut Self {
         state.into_iter().for_each(|(key, value)| {
-            let mut existing = self.state.iter_mut().find(|(n, _)| *n == key);
+            let existing = self.state.iter_mut().find(|(n, _)| *n == key);
 
             match existing {
                 Some(item) => *item = (key, value),
@@ -73,7 +73,7 @@ impl InputState {
 }
 impl State<f32> for InputState {
     fn get(&self, name: &str) -> &f32 {
-        let found = self.state.iter().find(|(n, _)| *n == name).map(|(n, v)| v);
+        let found = self.state.iter().find(|(n, _)| *n == name).map(|(_, v)| v);
         match found {
             Some(val) => val,
             None => panic!("No state named {} found in {:?}", name, self),

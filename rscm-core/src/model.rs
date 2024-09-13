@@ -437,7 +437,18 @@ impl Model {
 mod tests {
     use super::*;
     use crate::example_components::{TestComponent, TestComponentParameters};
+    use crate::interpolate::strategies::PreviousStrategy;
+    use numpy::array;
     use numpy::ndarray::Array;
+
+    fn get_emissions() -> Timeseries<f32> {
+        Timeseries::new(
+            array![0.0, 10.0],
+            Arc::new(TimeAxis::from_bounds(array![1800.0, 1850.0, 2100.0])),
+            "GtC / yr".to_string(),
+            InterpolationStrategy::from(PreviousStrategy::new(true)),
+        )
+    }
 
     #[test]
     fn step() {
@@ -447,6 +458,7 @@ mod tests {
             .with_component(Arc::new(TestComponent::from_parameters(
                 TestComponentParameters { p: 0.5 },
             )))
+            .with_exogenous_variable("Emissions|CO2", get_emissions())
             .build();
 
         assert_eq!(model.time_index, 0);
@@ -483,6 +495,7 @@ mod tests {
             .with_component(Arc::new(TestComponent::from_parameters(
                 TestComponentParameters { p: 0.5 },
             )))
+            .with_exogenous_variable("Emissions|CO2", get_emissions())
             .build();
 
         let exp = "digraph {

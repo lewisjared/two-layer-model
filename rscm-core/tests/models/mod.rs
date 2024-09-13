@@ -192,7 +192,6 @@ fn test_coupled_model() {
     );
 
     println!("{:?}", model.as_dot());
-    println!("{:?}", model);
 
     // Run the model
     model.run()
