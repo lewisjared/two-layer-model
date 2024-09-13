@@ -41,7 +41,7 @@ fn check_monotonic_increasing(arr: &Array1<Time>) -> bool {
 ///
 /// Generally, decimal year values are used throughout
 impl TimeAxis {
-    pub fn new(bounds: Array1<Time>) -> Self {
+    fn new(bounds: Array1<Time>) -> Self {
         let is_monotonic = check_monotonic_increasing(&bounds);
         assert!(is_monotonic);
 
@@ -87,7 +87,7 @@ impl TimeAxis {
     pub fn from_bounds(bounds: Array1<Time>) -> Self {
         assert!(bounds.len() > 1);
 
-        Self { bounds }
+        Self::new(bounds)
     }
 
     pub fn values(&self) -> ArrayView1<Time> {
