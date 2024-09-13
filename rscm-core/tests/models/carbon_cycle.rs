@@ -3,29 +3,29 @@ use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use rscm_core::ivp::{get_last_step, IVPBuilder, IVP};
-use rscm_core::timeseries::Time;
+use rscm_core::timeseries::{FloatValue, Time};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-const GTC_PER_PPM: f32 = 2.13;
-type ModelState = Vector3<f32>;
+const GTC_PER_PPM: FloatValue = 2.13;
+type ModelState = Vector3<FloatValue>;
 
 #[derive(Debug, Clone)]
 pub struct CarbonCycleParameters {
     /// Timescale of the box's response
     /// unit: yr
-    pub tau: f32,
+    pub tau: FloatValue,
     /// Pre-industrial atmospheric CO_2 concentration
     /// unit: ppm
-    pub conc_pi: f32,
+    pub conc_pi: FloatValue,
     /// Sensitivity of lifetime to changes in global-mean temperature
     /// unit: 1 / K
-    pub alpha_temperature: f32,
+    pub alpha_temperature: FloatValue,
 }
 
 #[derive(Debug, Clone)]
 pub struct SolverOptions {
-    pub step_size: f32,
+    pub step_size: FloatValue,
 }
 
 #[derive(Debug, Clone)]
@@ -120,8 +120,8 @@ impl IVP<Time, ModelState> for CarbonCycleComponent {
         &self,
         _t: Time,
         input_state: &InputState,
-        _y: &Vector3<f32>,
-        dy_dt: &mut Vector3<f32>,
+        _y: &Vector3<FloatValue>,
+        dy_dt: &mut Vector3<FloatValue>,
     ) {
         let emissions = input_state.get("Emissions|CO2|Anthropogenic");
         let temperature = input_state.get("Surface Temperature");

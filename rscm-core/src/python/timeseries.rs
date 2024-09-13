@@ -1,4 +1,4 @@
-use crate::timeseries::{Time, TimeAxis, Timeseries};
+use crate::timeseries::{FloatValue, Time, TimeAxis, Timeseries};
 use numpy::{PyArray1, PyArrayMethods, ToPyArray};
 use pyo3::prelude::*;
 
@@ -25,14 +25,14 @@ impl PyTimeAxis {
 
 #[pyclass]
 #[pyo3(name = "Timeseries")]
-pub struct PyTimeseries(pub Timeseries<f32>);
+pub struct PyTimeseries(pub Timeseries<FloatValue>);
 
 #[pymethods]
 impl PyTimeseries {
     #[staticmethod]
     fn from_values<'py>(
-        values: Bound<'py, PyArray1<f32>>,
-        time: Bound<'py, PyArray1<f32>>,
+        values: Bound<'py, PyArray1<FloatValue>>,
+        time: Bound<'py, PyArray1<FloatValue>>,
     ) -> Self {
         PyTimeseries(Timeseries::from_values(
             values.to_owned_array(),

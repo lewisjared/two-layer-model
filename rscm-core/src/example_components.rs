@@ -2,12 +2,12 @@
 use crate::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
-use crate::timeseries::Time;
+use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::TimeseriesCollection;
 
 #[derive(Debug)]
 pub(crate) struct TestComponentParameters {
-    pub p: f32,
+    pub p: FloatValue,
 }
 
 #[derive(Debug)]

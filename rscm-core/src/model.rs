@@ -11,7 +11,7 @@
 /// If a required exogenous variable isn't provided, then the build step will fail.
 use crate::component::{Component, InputState, RequirementDefinition, State};
 use crate::interpolate::strategies::{InterpolationStrategy, LinearSplineStrategy};
-use crate::timeseries::{Time, TimeAxis, Timeseries};
+use crate::timeseries::{FloatValue, Time, TimeAxis, Timeseries};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use numpy::ndarray::Array;
 use petgraph::dot::{Config, Dot};
@@ -123,7 +123,7 @@ impl ModelBuilder {
     pub fn with_exogenous_variable(
         &mut self,
         name: &str,
-        timeseries: Timeseries<f32>,
+        timeseries: Timeseries<FloatValue>,
     ) -> &mut Self {
         self.exogenous_variables.add_timeseries(
             name.to_string(),
@@ -441,7 +441,7 @@ mod tests {
     use numpy::array;
     use numpy::ndarray::Array;
 
-    fn get_emissions() -> Timeseries<f32> {
+    fn get_emissions() -> Timeseries<FloatValue> {
         Timeseries::new(
             array![0.0, 10.0],
             Arc::new(TimeAxis::from_bounds(array![1800.0, 1850.0, 2100.0])),

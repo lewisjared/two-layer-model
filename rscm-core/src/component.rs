@@ -1,4 +1,4 @@
-use crate::timeseries::Time;
+use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -18,13 +18,13 @@ pub trait State<T> {
 
 #[derive(Debug, Clone)]
 pub struct InputState {
-    state: Vec<(String, f32)>,
+    state: Vec<(String, FloatValue)>,
 }
 
 impl InputState {
-    pub fn from_vectors(values: Vec<f32>, names: Vec<String>) -> Self {
+    pub fn from_vectors(values: Vec<FloatValue>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
-        let state: Vec<(String, f32)> = zip(names, values).collect();
+        let state: Vec<(String, FloatValue)> = zip(names, values).collect();
         Self { state }
     }
 
@@ -32,16 +32,26 @@ impl InputState {
         Self { state: vec![] }
     }
 
-    pub fn from_hashmap_and_verify(
-        items: HashMap<String, f32>,
-        expected_items: Vec<String>,
-    ) -> Self {
+    pub fn from_hashmap(items: HashMap<String, FloatValue>) -> Self {
         let mut state = vec![];
         items.into_iter().for_each(|(name, value)| {
-            assert!(expected_items.contains(&name));
             state.push((name, value));
         });
         Self { state }
+    }
+
+    pub fn from_hashmap_and_verify(
+        items: HashMap<String, FloatValue>,
+        expected_items: Vec<String>,
+    ) -> Self {
+        let mut keys: Vec<&String> = items.keys().collect();
+        keys.sort_unstable();
+        let mut expected_items: Vec<&String> = expected_items.iter().collect();
+        expected_items.sort_unstable();
+
+        assert_eq!(keys, expected_items);
+
+        Self::from_hashmap(items)
     }
 
     pub fn has(&self, name: &str) -> bool {
@@ -63,16 +73,21 @@ impl InputState {
         self
     }
 
-    pub fn iter(&self) -> Iter<'_, (String, f32)> {
+    pub fn iter(&self) -> Iter<'_, (String, FloatValue)> {
         self.state.iter()
     }
 
-    pub fn into_iter(self) -> std::vec::IntoIter<(String, f32)> {
+    pub fn into_iter(self) -> std::vec::IntoIter<(String, FloatValue)> {
         self.state.into_iter()
     }
+
+    /// Converts the state into an equivalent hashmap
+    pub fn to_hashmap(self) -> HashMap<String, FloatValue> {
+        HashMap::from_iter(self.state.into_iter())
+    }
 }
-impl State<f32> for InputState {
-    fn get(&self, name: &str) -> &f32 {
+impl State<FloatValue> for InputState {
+    fn get(&self, name: &str) -> &FloatValue {
         let found = self.state.iter().find(|(n, _)| *n == name).map(|(_, v)| v);
         match found {
             Some(val) => val,
@@ -98,11 +113,11 @@ pub struct RequirementDefinition {
 }
 
 impl RequirementDefinition {
-    pub fn new(name: &str, unit: &str, parameter_type: RequirementType) -> Self {
+    pub fn new(name: &str, unit: &str, requirement_type: RequirementType) -> Self {
         Self {
             name: name.to_string(),
             unit: unit.to_string(),
-            requirement_type: parameter_type,
+            requirement_type,
         }
     }
 }

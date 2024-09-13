@@ -1,3 +1,4 @@
+use crate::timeseries::FloatValue;
 use thiserror::Error;
 
 /// Error type for invalid operations.

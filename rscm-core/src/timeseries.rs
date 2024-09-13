@@ -8,7 +8,8 @@ use numpy::ndarray::{Array, Array1, ViewRepr};
 use std::iter::zip;
 use std::sync::Arc;
 
-pub type Time = f32;
+pub type Time = f64;
+pub type FloatValue = f64;
 
 #[derive(Clone, Debug)]
 pub struct TimeAxis {
@@ -270,7 +271,7 @@ where
     ///
     /// Doesn't verify that all prior values are non-nan
     pub fn latest_value(&self) -> Option<T> {
-        match (self.latest < 0) & (self.latest.to_usize().unwrap() < self.len()) {
+        match (self.latest < 0) || (self.latest.to_usize().unwrap() > self.len()) {
             true => None,
             false => Option::from(self.values[self.latest.to_usize().unwrap()]),
         }

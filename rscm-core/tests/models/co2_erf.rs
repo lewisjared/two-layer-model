@@ -1,16 +1,16 @@
 use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
-use rscm_core::timeseries::Time;
+use rscm_core::timeseries::{FloatValue, Time};
 
 #[derive(Debug, Clone)]
 pub struct CO2ERFParameters {
     /// ERF due to a doubling of atmospheric CO_2 concentrations
     /// unit: W / m^2
-    pub erf_2xco2: f32,
+    pub erf_2xco2: FloatValue,
     /// Pre-industrial atmospheric CO_2 concentration
     /// unit: ppm
-    pub conc_pi: f32,
+    pub conc_pi: FloatValue,
 }
 
 #[derive(Debug, Clone)]
@@ -47,7 +47,7 @@ impl Component for CO2ERF {
         _t_next: Time,
         input_state: &InputState,
     ) -> Result<OutputState, String> {
-        let erf = self.parameters.erf_2xco2 / 2.0f32.log10()
+        let erf = self.parameters.erf_2xco2 / 2.0_f64.log10()
             * (1.0
                 + (input_state.get("Atmospheric Concentration|CO2") - self.parameters.conc_pi)
                     / self.parameters.conc_pi)

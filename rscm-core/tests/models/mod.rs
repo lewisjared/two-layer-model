@@ -5,7 +5,7 @@ use numpy::ndarray::Array;
 use rscm_core::component::InputState;
 use rscm_core::interpolate::strategies::{InterpolationStrategy, NextStrategy, PreviousStrategy};
 use rscm_core::model::ModelBuilder;
-use rscm_core::timeseries::{Time, TimeAxis, Timeseries};
+use rscm_core::timeseries::{FloatValue, Time, TimeAxis, Timeseries};
 use std::sync::Arc;
 
 mod carbon_cycle;
@@ -33,11 +33,11 @@ fn test_carbon_cycle() {
 
     let mut builder = ModelBuilder::new();
 
-    let get_exp_values_before_step = |time: Time| -> f32 {
+    let get_exp_values_before_step = |time: Time| -> FloatValue {
         (conc_initial - conc_pi) * (-(time - t_initial) / tau).exp() + conc_pi
     };
 
-    let get_exp_values_after_step = |time: Time| -> f32 {
+    let get_exp_values_after_step = |time: Time| -> FloatValue {
         emissions_level / gtc_per_ppm * tau * (1.0 - (-(time - step_year) / tau).exp())
             + get_exp_values_before_step(time)
     };
@@ -95,7 +95,7 @@ fn test_carbon_cycle() {
         .timeseries()
         .get_timeseries_by_name("Emissions|CO2|Anthropogenic")
         .unwrap();
-    let expected_concentrations: Vec<f32> = time_axis
+    let expected_concentrations: Vec<FloatValue> = time_axis
         .values()
         .iter()
         .map(|t| match *t < step_year {
@@ -103,7 +103,7 @@ fn test_carbon_cycle() {
             false => get_exp_values_after_step(*t),
         })
         .collect();
-    let expected_emissions: Vec<f32> = time_axis
+    let expected_emissions: Vec<FloatValue> = time_axis
         .values()
         .iter()
         .map(|t| match *t < step_year {

@@ -1,9 +1,12 @@
-use crate::{solve_tlm, TwoLayerModel, TwoLayerModelParameters};
+use crate::two_layer::{TwoLayerComponent, TwoLayerComponentParameters};
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use pyo3::wrap_pymodule;
 use pyo3_stub_gen::{define_stub_info_gatherer, derive::gen_stub_pyfunction};
+use rscm_core::component::{Component, InputState};
 use rscm_core::python::core;
-use std::sync::Arc;
+use rscm_core::timeseries::FloatValue;
+use std::collections::HashMap;
 
 #[gen_stub_pyfunction]
 #[pyfunction]
@@ -11,30 +14,23 @@ pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
 
-#[gen_stub_pyfunction]
-#[pyfunction]
-#[pyo3(name = "solve_tlm")]
-pub fn py_solve_tlm() {
-    solve_tlm()
-}
-
 #[pyclass]
-#[pyo3(name = "TwoLayerModel")]
-pub struct PyTwoLayerModel(pub TwoLayerModel);
+#[pyo3(name = "TwoLayerComponent")]
+pub struct PyTwoLayerComponent(pub TwoLayerComponent);
 
 #[pymethods]
-impl PyTwoLayerModel {
+impl PyTwoLayerComponent {
     #[new]
     fn from_parameters(
-        lambda0: f32,
-        a: f32,
-        efficacy: f32,
-        eta: f32,
-        heat_capacity_surface: f32,
-        heat_capacity_deep: f32,
+        lambda0: FloatValue,
+        a: FloatValue,
+        efficacy: FloatValue,
+        eta: FloatValue,
+        heat_capacity_surface: FloatValue,
+        heat_capacity_deep: FloatValue,
     ) -> Self {
-        Self(TwoLayerModel::from_parameters(Arc::new(
-            TwoLayerModelParameters {
+        Self(TwoLayerComponent::from_parameters(
+            TwoLayerComponentParameters {
                 lambda0,
                 a,
                 efficacy,
@@ -42,11 +38,19 @@ impl PyTwoLayerModel {
                 heat_capacity_surface,
                 heat_capacity_deep,
             },
-        )))
+        ))
     }
 
-    fn solve(&self) {
-        self.0.solve().expect("TODO: panic message");
+    fn solve<'py>(
+        &self,
+        t_current: FloatValue,
+        t_next: FloatValue,
+        state: HashMap<String, FloatValue>,
+    ) -> PyResult<HashMap<String, FloatValue>> {
+        let input_state = InputState::from_hashmap(state);
+        let output_state = self.0.solve(t_current, t_next, &input_state);
+
+        Ok(output_state.map(|t| t.to_hashmap()).unwrap())
     }
 }
 #[pymodule]
@@ -54,8 +58,7 @@ impl PyTwoLayerModel {
 fn two_layer_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(core))?;
     m.add_function(wrap_pyfunction!(add, m)?)?;
-    m.add_function(wrap_pyfunction!(py_solve_tlm, m)?)?;
-    m.add_class::<PyTwoLayerModel>()?;
+    m.add_class::<PyTwoLayerComponent>()?;
 
     set_path(m, "two_layer_model._lib.core", "core")?;
 

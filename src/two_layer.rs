@@ -8,25 +8,25 @@ use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use rscm_core::ivp::{IVPBuilder, IVP};
-use rscm_core::timeseries::{Time, Timeseries};
+use rscm_core::timeseries::{FloatValue, Time, Timeseries};
 use rscm_core::timeseries_collection::{TimeseriesCollection, VariableType};
 
 // Define some types that are used by OdeSolvers
-type ModelState = Vector3<f32>;
+type ModelState = Vector3<FloatValue>;
 
 #[derive(Clone, Debug)]
-pub struct TwoLayerModelParameters {
-    lambda0: f32,
-    a: f32,
-    efficacy: f32,
-    eta: f32,
-    heat_capacity_surface: f32,
-    heat_capacity_deep: f32,
+pub struct TwoLayerComponentParameters {
+    pub lambda0: FloatValue,
+    pub a: FloatValue,
+    pub efficacy: FloatValue,
+    pub eta: FloatValue,
+    pub heat_capacity_surface: FloatValue,
+    pub heat_capacity_deep: FloatValue,
 }
 
 #[derive(Debug, Clone)]
 pub struct TwoLayerComponent {
-    parameters: TwoLayerModelParameters,
+    parameters: TwoLayerComponentParameters,
 }
 
 // Create the set of ODEs to represent the two layer model
@@ -62,7 +62,7 @@ impl IVP<Time, ModelState> for TwoLayerComponent {
 }
 
 impl TwoLayerComponent {
-    fn from_parameters(parameters: TwoLayerModelParameters) -> Self {
+    pub fn from_parameters(parameters: TwoLayerComponentParameters) -> Self {
         Self { parameters }
     }
 }
@@ -70,20 +70,13 @@ impl TwoLayerComponent {
 impl Component for TwoLayerComponent {
     fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![
-            RequirementDefinition::new("erf", "W/m^2", RequirementType::Input),
+            RequirementDefinition::new(
+                "Effective Radiative Forcing",
+                "W/m^2",
+                RequirementType::Input,
+            ),
             RequirementDefinition::new("Surface Temperature", "K", RequirementType::Output),
         ]
-    }
-
-    fn extract_state(&self, collection: &TimeseriesCollection, t_current: Time) -> InputState {
-        InputState::from_vectors(
-            vec![collection
-                .get_timeseries_by_name("erf")
-                .unwrap()
-                .at_time(t_current)
-                .unwrap()],
-            self.input_names(),
-        )
     }
 
     fn solve(
@@ -92,7 +85,7 @@ impl Component for TwoLayerComponent {
         t_next: Time,
         input_state: &InputState,
     ) -> Result<OutputState, String> {
-        let erf = input_state.get("erf");
+        let erf = input_state.get("Effective Radiative Forcing");
 
         let y0 = ModelState::new(0.0, 0.0, 0.0);
 
@@ -116,9 +109,10 @@ impl Component for TwoLayerComponent {
     }
 }
 
+/// Solves the two layer component in isolation
 pub fn solve_tlm() -> Result<OutputState, String> {
     // Initialise the model
-    let model = TwoLayerComponent::from_parameters(TwoLayerModelParameters {
+    let model = TwoLayerComponent::from_parameters(TwoLayerComponentParameters {
         lambda0: 0.5,
         a: 0.01,
         efficacy: 0.5,
@@ -129,7 +123,7 @@ pub fn solve_tlm() -> Result<OutputState, String> {
 
     let mut ts_collection = TimeseriesCollection::new();
     ts_collection.add_timeseries(
-        "erf".to_string(),
+        "Effective Radiative Forcing".to_string(),
         Timeseries::from_values(
             array![1.0, 1.5, 2.0, 2.0],
             array![1848.0, 1849.0, 1850.0, 1900.0],
@@ -154,5 +148,6 @@ mod tests {
     #[test]
     fn it_works() {
         let res = solve_tlm().unwrap();
+        assert_eq!(*res.get("Surface Temperature"), 3.0);
     }
 }

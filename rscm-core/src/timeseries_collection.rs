@@ -1,4 +1,4 @@
-use crate::timeseries::Timeseries;
+use crate::timeseries::{FloatValue, Timeseries};
 use std::vec::IntoIter;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Eq, Debug)]
@@ -12,7 +12,7 @@ pub enum VariableType {
 
 #[derive(Debug)]
 pub struct TimeseriesItem {
-    pub timeseries: Timeseries<f32>,
+    pub timeseries: Timeseries<FloatValue>,
     pub name: String,
     pub variable_type: VariableType,
 }
@@ -38,7 +38,7 @@ impl TimeseriesCollection {
     pub fn add_timeseries(
         &mut self,
         name: String,
-        timeseries: Timeseries<f32>,
+        timeseries: Timeseries<FloatValue>,
         variable_type: VariableType,
     ) {
         if self.timeseries.iter().any(|x| x.name == name) {
@@ -55,10 +55,13 @@ impl TimeseriesCollection {
         self.timeseries.iter().find(|x| x.name == name)
     }
 
-    pub fn get_timeseries_by_name(&self, name: &str) -> Option<&Timeseries<f32>> {
+    pub fn get_timeseries_by_name(&self, name: &str) -> Option<&Timeseries<FloatValue>> {
         self.get_by_name(name).map(|item| &item.timeseries)
     }
-    pub fn get_timeseries_by_name_mut(&mut self, name: &str) -> Option<&mut Timeseries<f32>> {
+    pub fn get_timeseries_by_name_mut(
+        &mut self,
+        name: &str,
+    ) -> Option<&mut Timeseries<FloatValue>> {
         self.timeseries
             .iter_mut()
             .find(|x| x.name == name)
