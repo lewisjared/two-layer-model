@@ -1,9 +1,9 @@
 use crate::timeseries::Time;
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
-use std::collections::hash_map::IntoIter;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
+use std::slice::Iter;
 
 /// Generic state representation
 ///
@@ -17,38 +17,35 @@ pub trait State<T> {
 }
 
 #[derive(Debug, Clone)]
-pub struct InputState(HashMap<String, f32>);
+pub struct InputState {
+    state: Vec<(String, f32)>,
+}
 
 impl InputState {
     pub fn from_vectors(values: Vec<f32>, names: Vec<String>) -> Self {
         assert_eq!(values.len(), names.len());
-        let mut map = HashMap::new();
-        zip(names, values).for_each(|(k, v)| {
-            map.insert(k, v);
-        });
-        Self(map)
+        let state: Vec<(String, f32)> = zip(names.into_iter(), values.into_iter()).collect();
+        Self { state }
     }
 
     pub fn empty() -> Self {
-        Self(HashMap::new())
+        Self { state: vec![] }
     }
 
     pub fn from_hashmap_and_verify(
         items: HashMap<String, f32>,
         expected_items: Vec<String>,
     ) -> Self {
-        for key in expected_items {
-            assert!(items.contains_key(&key))
-        }
-        Self::from_hashmap(items)
-    }
-
-    pub fn from_hashmap(items: HashMap<String, f32>) -> Self {
-        Self(items)
+        let mut state = vec![];
+        items.into_iter().for_each(|(name, value)| {
+            assert!(expected_items.contains(&name));
+            state.push((name, value));
+        });
+        Self { state }
     }
 
     pub fn has(&self, name: &str) -> bool {
-        self.0.contains_key(name)
+        self.state.iter().find(|(n, _)| *n == name).is_some()
     }
 
     /// Merge state into this state
@@ -56,22 +53,28 @@ impl InputState {
     /// Overrides any existing values with the same name
     pub fn merge(&mut self, state: InputState) -> &mut Self {
         state.into_iter().for_each(|(key, value)| {
-            self.0.insert(key, value);
+            let mut existing = self.state.iter_mut().find(|(n, _)| *n == key);
+
+            match existing {
+                Some(item) => *item = (key, value),
+                None => self.state.push((key, value)),
+            }
         });
         self
     }
 
-    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, f32> {
-        self.0.iter()
+    pub fn iter(&self) -> Iter<'_, (String, f32)> {
+        self.state.iter()
     }
 
-    pub fn into_iter(self) -> IntoIter<String, f32> {
-        self.0.into_iter()
+    pub fn into_iter(self) -> std::vec::IntoIter<(String, f32)> {
+        self.state.into_iter()
     }
 }
 impl State<f32> for InputState {
     fn get(&self, name: &str) -> &f32 {
-        match self.0.get(name) {
+        let found = self.state.iter().find(|(n, _)| *n == name).map(|(n, v)| v);
+        match found {
             Some(val) => val,
             None => panic!("No state named {} found in {:?}", name, self),
         }
