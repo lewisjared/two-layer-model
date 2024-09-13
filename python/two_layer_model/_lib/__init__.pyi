@@ -4,7 +4,7 @@
 
 class TwoLayerComponent:
     @staticmethod
-    def from_parameters(
+    def from_parameters(  # noqa: PLR0913
         lambda0: float,
         a: float,
         efficacy: float,

@@ -18,10 +18,8 @@ def test_timeaxis_create():
     assert axis.len() == 3
 
     # This is in rust debug format, but ok for now
-    assert (
-        repr(axis)
-        == "TimeAxis { bounds: [2000.0, 2020.0, 2040.0, 2060.0], shape=[4], strides=[1], layout=CFcf (0xf), const ndim=1 }"
-    )
+    exp = "TimeAxis { bounds: [2000.0, 2020.0, 2040.0, 2060.0], shape=[4], strides=[1], layout=CFcf (0xf), const ndim=1 }"  # noqa: E501
+    assert repr(axis) == exp
 
 
 def test_timeaxis_immutable(timeaxis):

@@ -1,5 +1,4 @@
 import numpy as np
-
 from numpy.typing import NDArray
 
 # RSCM uses 64bit floats throughout
