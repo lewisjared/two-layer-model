@@ -21,6 +21,10 @@ impl PyTimeAxis {
     fn values<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<Time>> {
         self.0.values().to_pyarray_bound(py)
     }
+
+    fn bounds<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<Time>> {
+        self.0.bounds().to_pyarray_bound(py)
+    }
 }
 
 #[pyclass]

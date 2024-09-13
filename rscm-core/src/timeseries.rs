@@ -94,6 +94,10 @@ impl TimeAxis {
         self.bounds.slice(s![0..self.len()])
     }
 
+    pub fn bounds(&self) -> ArrayView1<Time> {
+        self.bounds.view()
+    }
+
     /// Get the last time value
     pub fn len(&self) -> usize {
         self.bounds.len() - 1

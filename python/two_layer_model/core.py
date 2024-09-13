@@ -1,3 +1,3 @@
-from two_layer_model._lib.core import TimeAxis, TimeSeries  # noqa
+from two_layer_model._lib.core import TimeAxis, Timeseries  # noqa
 
-__all__ = ["TimeAxis", "TimeSeries"]
+__all__ = ["TimeAxis", "Timeseries"]
