@@ -55,3 +55,13 @@ class Timeseries:
         Interpolated value
 
         """
+
+class VariableType(Enum):
+    Exogenous = auto()
+    Endogenous = auto()
+
+class TimeseriesCollection:
+    def __init__(self) -> TimeseriesCollection: ...
+    def add_timeseries(
+        self, name: str, timeseries: Timeseries, variable_type: VariableType
+    ): ...

@@ -5,12 +5,15 @@ use pyo3::{pymodule, Bound, PyResult};
 
 mod model;
 pub mod timeseries;
+mod timeseries_collection;
 
 #[pymodule]
 pub fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<timeseries::PyTimeAxis>()?;
     m.add_class::<timeseries::PyTimeseries>()?;
     m.add_class::<timeseries::PyInterpolationStrategy>()?;
+    m.add_class::<timeseries_collection::PyTimeseriesCollection>()?;
+    m.add_class::<timeseries_collection::VariableType>()?;
     Ok(())
 }
 

@@ -5,21 +5,6 @@ import pytest
 from two_layer_model.core import InterpolationStrategy, TimeAxis, Timeseries
 
 
-@pytest.fixture()
-def time_axis():
-    return TimeAxis.from_values(np.arange(1850.0, 2000.0, 5))
-
-
-@pytest.fixture()
-def timeseries():
-    return Timeseries(
-        values=np.arange(1850.0, 2001.0, 5),
-        time_axis=TimeAxis.from_values(np.arange(1850.0, 2001.0, 5)),
-        units="K",
-        interpolation_strategy=InterpolationStrategy.Next,
-    )
-
-
 class TestTimeAxis:
     def test_time_axis_create(self):
         axis = TimeAxis.from_values(np.asarray([2000.0, 2020.0, 2040.0]))

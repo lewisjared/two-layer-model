@@ -148,3 +148,9 @@ impl PyTimeseries {
         self.0.at_time(time)
     }
 }
+
+impl From<PyTimeseries> for Timeseries<FloatValue> {
+    fn from(value: PyTimeseries) -> Self {
+        value.0
+    }
+}
