@@ -1,3 +1,6 @@
-from two_layer_model._lib.core import TimeAxis, Timeseries  # noqa
+"""
+Core classes and functions for Rust Simple Climate Models (RSCMs)
+"""
+from two_layer_model._lib.core import InterpolationStrategy, TimeAxis, Timeseries
 
-__all__ = ["TimeAxis", "Timeseries"]
+__all__ = ["InterpolationStrategy", "TimeAxis", "Timeseries"]

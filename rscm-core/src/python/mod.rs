@@ -8,5 +8,6 @@ pub mod timeseries;
 pub fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<timeseries::PyTimeAxis>()?;
     m.add_class::<timeseries::PyTimeseries>()?;
+    m.add_class::<timeseries::PyInterpolationStrategy>()?;
     Ok(())
 }

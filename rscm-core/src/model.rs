@@ -285,6 +285,12 @@ impl ModelBuilder {
     }
 }
 
+impl Default for ModelBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// A coupled set of components that are solved on a common time axis.
 ///
 /// These components are solved over time steps defined by the ['time_axis'].

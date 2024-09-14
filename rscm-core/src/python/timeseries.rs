@@ -1,10 +1,15 @@
+use crate::interpolate::strategies::{
+    InterpolationStrategy, LinearSplineStrategy, NextStrategy, PreviousStrategy,
+};
 use crate::timeseries::{FloatValue, Time, TimeAxis, Timeseries};
 use numpy::{PyArray1, PyArrayMethods, ToPyArray};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use std::sync::Arc;
 
 #[pyclass]
 #[pyo3(name = "TimeAxis")]
-pub struct PyTimeAxis(pub TimeAxis);
+pub struct PyTimeAxis(pub Arc<TimeAxis>);
 
 #[pymethods]
 impl PyTimeAxis {
@@ -13,12 +18,12 @@ impl PyTimeAxis {
     }
     #[staticmethod]
     fn from_values(values: Bound<PyArray1<Time>>) -> Self {
-        Self(TimeAxis::from_values(values.to_owned_array()))
+        Self(Arc::new(TimeAxis::from_values(values.to_owned_array())))
     }
 
     #[staticmethod]
     fn from_bounds(bounds: Bound<PyArray1<Time>>) -> Self {
-        Self(TimeAxis::from_bounds(bounds.to_owned_array()))
+        Self(Arc::new(TimeAxis::from_bounds(bounds.to_owned_array())))
     }
 
     fn values<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<Time>> {
@@ -29,7 +34,7 @@ impl PyTimeAxis {
         self.0.bounds().to_pyarray_bound(py)
     }
 
-    fn len(&self) -> usize {
+    fn __len__(&self) -> usize {
         self.0.len()
     }
 
@@ -42,17 +47,79 @@ impl PyTimeAxis {
     }
 }
 
+#[derive(Clone)]
+#[pyclass(frozen)]
+#[pyo3(name = "InterpolationStrategy")]
+pub enum PyInterpolationStrategy {
+    Linear,
+    Previous,
+    Next,
+}
+
+impl From<PyInterpolationStrategy> for InterpolationStrategy {
+    fn from(value: PyInterpolationStrategy) -> Self {
+        match value {
+            PyInterpolationStrategy::Linear => {
+                InterpolationStrategy::from(LinearSplineStrategy::new(true))
+            }
+            PyInterpolationStrategy::Previous => {
+                InterpolationStrategy::from(PreviousStrategy::new(true))
+            }
+            PyInterpolationStrategy::Next => InterpolationStrategy::from(NextStrategy::new(true)),
+        }
+    }
+}
+
 #[pyclass]
 #[pyo3(name = "Timeseries")]
 pub struct PyTimeseries(pub Timeseries<FloatValue>);
 
 #[pymethods]
 impl PyTimeseries {
+    #[new]
+    fn new(
+        values: Bound<PyArray1<FloatValue>>,
+        time_axis: Bound<PyTimeAxis>,
+        units: String,
+        interpolation_strategy: PyInterpolationStrategy,
+    ) -> PyResult<Self> {
+        let interpolation_strategy: InterpolationStrategy = interpolation_strategy.into();
+
+        let values = values.to_owned_array();
+        let time_axis = time_axis.borrow().0.clone();
+
+        if values.len() != time_axis.len() {
+            Err(PyValueError::new_err("Lengths do not match"))
+        } else {
+            Ok(Self(Timeseries::new(
+                values,
+                time_axis,
+                units,
+                interpolation_strategy,
+            )))
+        }
+    }
+
     #[staticmethod]
-    fn from_values(values: Bound<PyArray1<FloatValue>>, time: Bound<PyArray1<FloatValue>>) -> Self {
-        PyTimeseries(Timeseries::from_values(
-            values.to_owned_array(),
-            time.to_owned_array(),
-        ))
+    fn from_values(
+        values: Bound<PyArray1<FloatValue>>,
+        time: Bound<PyArray1<FloatValue>>,
+    ) -> PyResult<Self> {
+        let values = values.to_owned_array();
+        let time = time.to_owned_array();
+
+        if values.len() != time.len() {
+            Err(PyValueError::new_err("Lengths do not match"))
+        } else {
+            Ok(PyTimeseries(Timeseries::from_values(values, time)))
+        }
+    }
+
+    fn set(&mut self, time_index: usize, value: FloatValue) {
+        self.0.set(time_index, value)
+    }
+
+    fn values<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<FloatValue>> {
+        self.0.values().to_pyarray_bound(py)
     }
 }

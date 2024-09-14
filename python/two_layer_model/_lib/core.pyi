@@ -1,3 +1,5 @@
+from enum import Enum, auto
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -16,4 +18,13 @@ class TimeAxis:
     def at(self, index: int) -> F: ...
     def at_bounds(self, index: int) -> tuple[F, F]: ...
 
-class Timeseries: ...
+class InterpolationStrategy(Enum):
+    Linear = auto()
+    Next = auto()
+    Previous = auto()
+
+class Timeseries:
+    def __init__(
+        self, values: Arr, time_axis: TimeAxis, units: str, interpolation_strategy
+    ) -> Timeseries: ...
+    def values(self) -> Arr: ...

@@ -40,7 +40,7 @@ impl PyTwoLayerComponent {
         ))
     }
 
-    fn solve<'py>(
+    fn solve(
         &self,
         t_current: FloatValue,
         t_next: FloatValue,

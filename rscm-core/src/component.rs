@@ -190,7 +190,7 @@ pub trait Component: Debug {
         self.input_names().into_iter().for_each(|name| {
             let ts = collection
                 .get_by_name(name.as_str())
-                .expect(format!("No timeseries with variable='{}'", name).as_str());
+                .unwrap_or_else(|| panic!("No timeseries with variable='{}'", name));
 
             let result = match ts.variable_type {
                 VariableType::Exogenous => ts.timeseries.at_time(t_current).unwrap(),
