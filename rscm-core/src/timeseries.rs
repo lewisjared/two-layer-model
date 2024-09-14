@@ -271,7 +271,7 @@ where
         }
     }
 
-    /// Get the index of the lastest valid timestep
+    /// Get the index of the latest valid timestep
     ///
     /// Doesn't verify that all prior values are non-nan
     pub fn latest(&self) -> &isize {

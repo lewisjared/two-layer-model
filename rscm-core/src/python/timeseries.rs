@@ -1,3 +1,4 @@
+use crate::errors::RSCMResult;
 use crate::interpolate::strategies::{
     InterpolationStrategy, LinearSplineStrategy, NextStrategy, PreviousStrategy,
 };
@@ -121,5 +122,28 @@ impl PyTimeseries {
 
     fn values<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<FloatValue>> {
         self.0.values().to_pyarray_bound(py)
+    }
+
+    fn __len__(&self) -> usize {
+        self.0.len()
+    }
+
+    #[getter]
+    fn latest(&self) -> isize {
+        *self.0.latest()
+    }
+
+    fn with_interpolation_strategy(&mut self, interpolation_strategy: PyInterpolationStrategy) {
+        let interpolation_strategy: InterpolationStrategy = interpolation_strategy.into();
+
+        self.0.with_interpolation_strategy(interpolation_strategy);
+    }
+
+    fn latest_value(&self) -> Option<FloatValue> {
+        self.0.latest_value()
+    }
+
+    fn at_time(&self, time: Time) -> RSCMResult<FloatValue> {
+        self.0.at_time(time)
     }
 }
