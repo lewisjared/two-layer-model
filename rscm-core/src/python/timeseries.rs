@@ -133,6 +133,7 @@ impl PyTimeseries {
         *self.0.latest()
     }
 
+    // TODO: Figure out how to return a mutable ref to self to enable chaining
     fn with_interpolation_strategy(&mut self, interpolation_strategy: PyInterpolationStrategy) {
         let interpolation_strategy: InterpolationStrategy = interpolation_strategy.into();
 
