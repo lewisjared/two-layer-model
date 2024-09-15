@@ -1,6 +1,8 @@
 /// Python API to access core aspects of the RSCM library.
 ///
 /// This module wraps the core functionality of the RSCM library for use in Python.
+/// This doesn't create an extension module that can be imported into python,
+/// this is done in the root crate, but uses the core pymodule that is exposed here.
 ///
 /// ## Background
 ///
@@ -82,6 +84,8 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::{pymodule, Bound, PyResult};
 
+mod component;
+mod example_component;
 mod model;
 pub mod timeseries;
 mod timeseries_collection;

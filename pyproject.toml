@@ -18,6 +18,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
+    "scmdata>=0.17.0",
 ]
 
 
@@ -26,6 +27,8 @@ dev-dependencies = [
     "ruff>=0.6.2",
     "pytest>=8.3.2",
     "pip>=24.2",
+    "jupytext>=1.16.4",
+    "notebook>=7.2.2",
 ]
 
 
