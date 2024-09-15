@@ -91,6 +91,7 @@ impl Component for UserDerivedComponent {
 }
 
 #[pyclass]
+#[pyo3(name = "UserDerivedComponent")]
 pub struct PyUserDerivedComponent(UserDerivedComponent);
 
 #[pymethods]
