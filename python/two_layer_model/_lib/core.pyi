@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import TypeVar
+from typing import Protocol, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -109,9 +109,31 @@ class RequirementDefinition:
     units: str
     requirement_type: RequirementType
 
-class Component:
+class Component(Protocol):
+    """A component of the model that can be solved"""
+
     @classmethod
     def from_parameters(cls: type[T], parameters: dict[str, F]) -> T: ...
     def definitions(self) -> list[RequirementDefinition]: ...
+    def solve(
+        self, t_current: float, t_next: float, input_state: dict[str, float]
+    ) -> dict[str, float]: ...
+
+class CustomComponent(Protocol):
+    """
+    Interface required for registering Python-based component
+
+    See Also
+    --------
+    UserDefinedComponent
+    """
+
+    def definitions(self) -> list[RequirementDefinition]: ...
+    def solve(
+        self, t_current: float, t_next: float, input_state: dict[str, float]
+    ) -> dict[str, float]: ...
 
 class TestComponent(Component): ...
+
+class UserDerivedComponent(Component):
+    def __init__(self, component: CustomComponent) -> UserDerivedComponent: ...

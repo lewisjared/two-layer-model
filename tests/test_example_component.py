@@ -1,9 +1,13 @@
 import pytest
 
-from two_layer_model._lib.core import TestComponent, UserDerivedComponent
+from two_layer_model._lib.core import TestComponent
+from two_layer_model.core import RequirementDefinition, UserDerivedComponent
 
 
 class PythonComponent:
+    def definitions(self) -> list[RequirementDefinition]:
+        return []
+
     def solve(
         self, time_current: float, time_next: float, input_state: dict[str, float]
     ) -> dict[str, float]:
@@ -31,12 +35,12 @@ def test_component_invalid():
         TestComponent.from_parameters(None)
 
 
-def test_user_derived():
+def test_user_derived_create_and_solve():
     py_component = PythonComponent()
     component = UserDerivedComponent(py_component)
 
     # TODO: resolve later
-    component.definitions() == []
+    assert component.definitions() == []
 
     res = component.solve(0, 1, {"input": 35.0})
-    res["output"] == 35.0 * 3.0
+    assert res["output"] == 35.0 * 3.0
