@@ -116,6 +116,10 @@ impl PyTimeseries {
         }
     }
 
+    fn __repr__(&self) -> String {
+        format!("<Timeseries len={}>", self.0.len())
+    }
+
     fn set(&mut self, time_index: usize, value: FloatValue) {
         self.0.set(time_index, value)
     }
@@ -142,6 +146,10 @@ impl PyTimeseries {
 
     fn latest_value(&self) -> Option<FloatValue> {
         self.0.latest_value()
+    }
+
+    fn at(&self, time_index: usize) -> Option<FloatValue> {
+        self.0.at(time_index)
     }
 
     fn at_time(&self, time: Time) -> RSCMResult<FloatValue> {
