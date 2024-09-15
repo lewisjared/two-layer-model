@@ -7,4 +7,4 @@ pub mod python;
 pub mod timeseries;
 pub mod timeseries_collection;
 
-mod errors;
+pub mod errors;

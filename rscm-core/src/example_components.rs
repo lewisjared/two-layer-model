@@ -3,6 +3,7 @@
 use crate::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
+use crate::errors::RSCMResult;
 use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::TimeseriesCollection;
 use serde::Deserialize;
@@ -39,7 +40,7 @@ impl Component for TestComponent {
         _t_current: Time,
         _t_next: Time,
         input_state: &InputState,
-    ) -> Result<OutputState, String> {
+    ) -> RSCMResult<OutputState> {
         let emission_co2 = input_state.get("Emissions|CO2");
 
         println!("Solving {:?} with state: {:?}", self, input_state);

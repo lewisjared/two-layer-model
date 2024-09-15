@@ -1,6 +1,7 @@
 use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
+use rscm_core::errors::RSCMResult;
 use rscm_core::timeseries::{FloatValue, Time};
 
 #[derive(Debug, Clone)]
@@ -46,7 +47,7 @@ impl Component for CO2ERF {
         _t_current: Time,
         _t_next: Time,
         input_state: &InputState,
-    ) -> Result<OutputState, String> {
+    ) -> RSCMResult<OutputState> {
         let erf = self.parameters.erf_2xco2 / 2.0_f64.log10()
             * (1.0
                 + (input_state.get("Atmospheric Concentration|CO2") - self.parameters.conc_pi)

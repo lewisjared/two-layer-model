@@ -6,6 +6,7 @@ use std::sync::Arc;
 use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
+use rscm_core::errors::RSCMResult;
 use rscm_core::ivp::{IVPBuilder, IVP};
 use rscm_core::timeseries::{FloatValue, Time};
 
@@ -82,7 +83,7 @@ impl Component for TwoLayerComponent {
         t_current: Time,
         t_next: Time,
         input_state: &InputState,
-    ) -> Result<OutputState, String> {
+    ) -> RSCMResult<OutputState> {
         let erf = input_state.get("Effective Radiative Forcing");
 
         let y0 = ModelState::new(0.0, 0.0, 0.0);

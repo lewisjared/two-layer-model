@@ -1,3 +1,4 @@
+use crate::errors::RSCMResult;
 use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use pyo3::pyclass;
@@ -216,7 +217,7 @@ pub trait Component: Debug {
         t_current: Time,
         t_next: Time,
         input_state: &InputState,
-    ) -> Result<OutputState, String>;
+    ) -> RSCMResult<OutputState>;
 }
 
 #[cfg(test)]

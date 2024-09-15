@@ -2,6 +2,7 @@ use nalgebra::Vector3;
 use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
+use rscm_core::errors::RSCMResult;
 use rscm_core::ivp::{get_last_step, IVPBuilder, IVP};
 use rscm_core::timeseries::{FloatValue, Time};
 use std::collections::HashMap;
@@ -89,7 +90,7 @@ impl Component for CarbonCycleComponent {
         t_current: Time,
         t_next: Time,
         input_state: &InputState,
-    ) -> Result<OutputState, String> {
+    ) -> RSCMResult<OutputState> {
         let y0 = ModelState::new(
             *input_state.get("Atmospheric Concentration|CO2"),
             *input_state.get("Cumulative Land Uptake"),

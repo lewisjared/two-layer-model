@@ -97,6 +97,7 @@ pub fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<timeseries::PyInterpolationStrategy>()?;
     m.add_class::<timeseries_collection::PyTimeseriesCollection>()?;
     m.add_class::<timeseries_collection::VariableType>()?;
+    m.add_class::<component::UserDerivedComponent>()?;
     m.add_class::<component::RequirementDefinition>()?;
     m.add_class::<component::RequirementType>()?;
     m.add_class::<example_component::PyTestComponent>()?;
