@@ -64,6 +64,7 @@ where
         }
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn to_rk4(
         self,
         t0: T,

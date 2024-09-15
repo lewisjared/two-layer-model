@@ -1,5 +1,4 @@
 use crate::timeseries::{FloatValue, Timeseries};
-use std::vec::IntoIter;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Eq, Debug)]
 #[pyo3::pyclass]
@@ -22,6 +21,12 @@ pub struct TimeseriesItem {
 #[derive(Debug)]
 pub struct TimeseriesCollection {
     timeseries: Vec<TimeseriesItem>,
+}
+
+impl Default for TimeseriesCollection {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TimeseriesCollection {
@@ -71,8 +76,13 @@ impl TimeseriesCollection {
     pub fn iter(&self) -> impl Iterator<Item = &TimeseriesItem> {
         self.timeseries.iter()
     }
+}
 
-    pub fn into_iter(self) -> IntoIter<TimeseriesItem> {
+impl IntoIterator for TimeseriesCollection {
+    type Item = TimeseriesItem;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
         self.timeseries.into_iter()
     }
 }

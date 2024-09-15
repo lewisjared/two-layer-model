@@ -5,7 +5,6 @@ use pyo3::pyclass;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
-use std::slice::Iter;
 
 /// Generic state representation
 ///
@@ -75,17 +74,13 @@ impl InputState {
         self
     }
 
-    pub fn iter(&self) -> Iter<'_, (String, FloatValue)> {
+    pub fn iter(&self) -> impl Iterator<Item = &(String, FloatValue)> {
         self.state.iter()
-    }
-
-    pub fn into_iter(self) -> std::vec::IntoIter<(String, FloatValue)> {
-        self.state.into_iter()
     }
 
     /// Converts the state into an equivalent hashmap
     pub fn to_hashmap(self) -> HashMap<String, FloatValue> {
-        HashMap::from_iter(self.state.into_iter())
+        HashMap::from_iter(self.state)
     }
 }
 impl State<FloatValue> for InputState {
@@ -95,6 +90,15 @@ impl State<FloatValue> for InputState {
             Some(val) => val,
             None => panic!("No state named {} found in {:?}", name, self),
         }
+    }
+}
+
+impl IntoIterator for InputState {
+    type Item = (String, FloatValue);
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.state.into_iter()
     }
 }
 
