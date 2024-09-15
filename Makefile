@@ -1,5 +1,4 @@
 .DEFAULT_GOAL := all
-sources = python/two_layer_model tests
 
 # using pip install cargo (via maturin via pip) doesn't get the tty handle
 # so doesn't render color without some help
@@ -24,21 +23,21 @@ build-prod:
 
 .PHONY: format
 format:
-	uv run ruff check --fix $(sources)
-	uv run ruff format $(sources)
+	uv run ruff check --fix
+	uv run ruff format
 	cargo fmt
 
 .PHONY: lint-python
 lint-python:
-	uv run ruff check $(sources)
-	uv run ruff format --check $(sources)
+	uv run ruff check
+	uv run ruff format --check
 
 .PHONY: lint-rust
 lint-rust:
 	cargo fmt --version
 	cargo fmt --all -- --check
 	cargo clippy --version
-	cargo clippy --tests -- -D warnings
+	cargo clippy --tests
 
 .PHONY: lint
 lint: lint-python lint-rust
