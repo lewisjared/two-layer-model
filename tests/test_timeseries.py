@@ -29,6 +29,7 @@ class TestTimeAxis:
     def test_time_axis_create_from_list(self):
         match = "'list' object cannot be converted to 'PyArray<T, D>'"
         with pytest.raises(TypeError, match=match):
+            # noinspection PyTypeChecker
             TimeAxis.from_values([2000.0, 2020.0, 2040.0])
 
     def test_time_axis_at(self, time_axis):

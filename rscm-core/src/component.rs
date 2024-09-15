@@ -1,5 +1,6 @@
 use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
+use pyo3::pyclass;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
@@ -98,6 +99,7 @@ impl State<FloatValue> for InputState {
 
 pub type OutputState = InputState;
 
+#[pyclass]
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub enum RequirementType {
     Input,
@@ -105,10 +107,14 @@ pub enum RequirementType {
     InputAndOutput, // TODO: Figure out how to compose input and output together
 }
 
+#[pyclass]
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 pub struct RequirementDefinition {
+    #[pyo3(get, set)]
     pub name: String,
+    #[pyo3(get, set)]
     pub unit: String,
+    #[pyo3(get, set)]
     pub requirement_type: RequirementType,
 }
 

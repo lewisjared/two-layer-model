@@ -464,6 +464,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pythonize"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d0664248812c38cc55a4ed07f88e4df516ce82604b93b1ffdc041aa77a6cb3c"
+dependencies = [
+ "pyo3",
+ "serde",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -499,6 +509,7 @@ dependencies = [
  "ode_solvers",
  "petgraph",
  "pyo3",
+ "pythonize",
  "serde",
  "serde_json",
  "thiserror",

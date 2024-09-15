@@ -1,7 +1,10 @@
 from enum import Enum, auto
+from typing import TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
+
+T = TypeVar("T")
 
 # RSCM uses 64bit floats throughout
 Arr = NDArray[np.float64]
@@ -95,3 +98,20 @@ class TimeseriesCollection:
         -------
         List of timeseries
         """
+
+class RequirementType(Enum):
+    Input = auto()
+    Output = auto()
+    InputAndOutput = auto()
+
+class RequirementDefinition:
+    name: str
+    units: str
+    requirement_type: RequirementType
+
+class Component:
+    @classmethod
+    def from_parameters(cls: type[T], parameters: dict[str, F]) -> T: ...
+    def definitions(self) -> list[RequirementDefinition]: ...
+
+class TestComponent(Component): ...

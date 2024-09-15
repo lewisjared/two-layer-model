@@ -1,11 +1,13 @@
 #![allow(dead_code)]
+
 use crate::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::TimeseriesCollection;
+use serde::Deserialize;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct TestComponentParameters {
     pub p: FloatValue,
 }

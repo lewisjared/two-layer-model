@@ -20,6 +20,7 @@ log = "0.4"
 num = "0.4"
 is_close = "0.1"
 thiserror = "1.0"
+pythonize = "0.21.1"
 
 
 [dependencies.pyo3]
