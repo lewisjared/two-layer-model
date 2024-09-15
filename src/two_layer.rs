@@ -9,11 +9,12 @@ use rscm_core::component::{
 use rscm_core::errors::RSCMResult;
 use rscm_core::ivp::{IVPBuilder, IVP};
 use rscm_core::timeseries::{FloatValue, Time};
+use serde::Deserialize;
 
 // Define some types that are used by OdeSolvers
 type ModelState = Vector3<FloatValue>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct TwoLayerComponentParameters {
     pub lambda0: FloatValue,
     pub a: FloatValue,

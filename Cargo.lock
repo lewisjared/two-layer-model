@@ -682,7 +682,9 @@ dependencies = [
  "ode_solvers",
  "pyo3",
  "pyo3-stub-gen",
+ "pythonize",
  "rscm-core",
+ "serde",
  "uom",
 ]
 
