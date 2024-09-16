@@ -4,8 +4,7 @@ use crate::python::component::PyPythonComponent;
 use crate::python::timeseries::{PyTimeAxis, PyTimeseries};
 use crate::python::timeseries_collection::PyTimeseriesCollection;
 use crate::python::PyRustComponent;
-use crate::timeseries::{FloatValue, Time, Timeseries};
-use crate::timeseries_collection::VariableType;
+use crate::timeseries::{FloatValue, Time};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 
@@ -49,10 +48,10 @@ impl PyModelBuilder {
         Ok(self_)
     }
 
-    fn with_initial_values<'py>(
-        mut self_: PyRefMut<'py, Self>,
+    fn with_initial_values(
+        mut self_: PyRefMut<Self>,
         initial_values: HashMap<String, FloatValue>,
-    ) -> PyRefMut<'py, Self> {
+    ) -> PyRefMut<Self> {
         let initial_values = InputState::from_hashmap(initial_values);
         self_.0.with_initial_values(initial_values);
         self_
