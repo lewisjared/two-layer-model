@@ -1,10 +1,13 @@
+use crate::component::InputState;
 use crate::model::{Model, ModelBuilder};
 use crate::python::component::PyPythonComponent;
-use crate::python::timeseries::PyTimeAxis;
+use crate::python::timeseries::{PyTimeAxis, PyTimeseries};
 use crate::python::timeseries_collection::PyTimeseriesCollection;
 use crate::python::PyRustComponent;
-use crate::timeseries::Time;
+use crate::timeseries::{FloatValue, Time, Timeseries};
+use crate::timeseries_collection::VariableType;
 use pyo3::prelude::*;
+use std::collections::HashMap;
 
 #[pyclass]
 #[pyo3(name = "ModelBuilder")]
@@ -44,6 +47,36 @@ impl PyModelBuilder {
 
         self_.0.time_axis = time_axis;
         Ok(self_)
+    }
+
+    fn with_initial_values<'py>(
+        mut self_: PyRefMut<'py, Self>,
+        initial_values: HashMap<String, FloatValue>,
+    ) -> PyRefMut<'py, Self> {
+        let initial_values = InputState::from_hashmap(initial_values);
+        self_.0.with_initial_values(initial_values);
+        self_
+    }
+
+    fn with_exogenous_variable<'py>(
+        mut self_: PyRefMut<'py, Self>,
+        name: &str,
+        timeseries: Bound<'py, PyTimeseries>,
+    ) -> PyRefMut<'py, Self> {
+        self_
+            .0
+            .with_exogenous_variable(name, timeseries.borrow().0.clone());
+        self_
+    }
+
+    fn with_exogenous_collection<'py>(
+        mut self_: PyRefMut<'py, Self>,
+        timeseries: Bound<'py, PyTimeseriesCollection>,
+    ) -> PyRefMut<'py, Self> {
+        self_
+            .0
+            .with_exogenous_collection(timeseries.borrow().0.clone());
+        self_
     }
 
     fn build(&self) -> PyResult<PyModel> {
