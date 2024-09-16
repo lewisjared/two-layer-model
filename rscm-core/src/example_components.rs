@@ -8,7 +8,7 @@ use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::TimeseriesCollection;
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct TestComponentParameters {
     pub p: FloatValue,
 }

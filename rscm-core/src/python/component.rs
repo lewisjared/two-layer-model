@@ -4,33 +4,9 @@ use crate::errors::RSCMResult;
 use crate::timeseries::{FloatValue, Time};
 use pyo3::prelude::*;
 use std::collections::HashMap;
-
+use std::sync::Arc;
 // Reexport the Requirement Definition
 pub use crate::component::{RequirementDefinition, RequirementType};
-
-/// Enable the creation of components in python
-#[macro_export]
-macro_rules! impl_component_from_parameters {
-    ($py_component:ty, $component:ty, $parameter_type:ty) => {
-        #[pymethods]
-        impl $py_component {
-            #[staticmethod]
-            // Technically from_parameters isn't part of the Component trait (due to needing a generic),
-            // but it is a common pattern used by all
-            fn from_parameters(parameters: Bound<PyAny>) -> PyResult<Self> {
-                use pyo3::exceptions::PyValueError;
-                use pythonize::depythonize_bound;
-
-                // todo: figure out how to use an attrs class as parameters instead of a dict
-                let parameters = depythonize_bound::<$parameter_type>(parameters);
-                match parameters {
-                    Ok(parameters) => Ok(Self(<$component>::from_parameters(parameters))),
-                    Err(e) => Err(PyValueError::new_err(format!("{}", e))),
-                }
-            }
-        }
-    };
-}
 
 /// Expose component-related functionality to python
 #[macro_export]
@@ -49,13 +25,54 @@ macro_rules! impl_component {
                 input_state: HashMap<String, FloatValue>,
             ) -> PyResult<HashMap<String, FloatValue>> {
                 let state = InputState::from_hashmap(input_state);
-                let output_state = Component::solve(&self.0, t_current, t_next, &state)?;
+                let output_state = self.0.solve(t_current, t_next, &state)?;
                 Ok(output_state.to_hashmap())
             }
         }
     };
 }
 
+/// Create a component builder that can be used by python to instantiate components created Rust.
+#[macro_export]
+macro_rules! create_component_builder {
+    ($builder_name:ident, $rust_component:ty, $component_parameters:ty) => {
+        #[pyclass]
+        pub struct $builder_name {
+            parameters: $component_parameters,
+        }
+
+        #[pymethods]
+        impl $builder_name {
+            #[staticmethod]
+            pub fn from_parameters(parameters: Bound<PyAny>) -> PyResult<Self> {
+                use pyo3::exceptions::PyValueError;
+
+                // todo: figure out how to use an attrs class as parameters instead of a dict
+                let parameters = pythonize::depythonize_bound::<$component_parameters>(parameters);
+                match parameters {
+                    Ok(parameters) => Ok(Self { parameters }),
+                    Err(e) => Err(PyValueError::new_err(format!("{}", e))),
+                }
+            }
+            pub fn build(&self) -> PyComponent {
+                PyComponent(std::sync::Arc::new(<$rust_component>::from_parameters(
+                    self.parameters.clone(),
+                )))
+            }
+        }
+    };
+}
+
+/// Python wrapper for a Rust-defined class
+///
+/// Instances of ['PyComponent'] are created via a ComponentBuilder.
+#[pyclass]
+#[derive(Debug, Clone)]
+pub struct PyComponent(pub Arc<dyn Component + Send + Sync>);
+
+impl_component!(PyComponent);
+
+/// Translate a provided PyObject (Python Class) into a Component
 #[pyclass]
 #[derive(Debug)]
 pub struct UserDerivedComponent {
@@ -90,6 +107,7 @@ impl Component for UserDerivedComponent {
     }
 }
 
+/// Python class to expose a UserDerivedComponent
 #[pyclass]
 #[pyo3(name = "UserDerivedComponent")]
 pub struct PyUserDerivedComponent(UserDerivedComponent);

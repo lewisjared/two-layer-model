@@ -90,6 +90,8 @@ mod model;
 pub mod timeseries;
 mod timeseries_collection;
 
+pub use component::PyComponent;
+
 #[pymodule]
 pub fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<timeseries::PyTimeAxis>()?;
@@ -100,7 +102,9 @@ pub fn core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<component::PyUserDerivedComponent>()?;
     m.add_class::<component::RequirementDefinition>()?;
     m.add_class::<component::RequirementType>()?;
-    m.add_class::<example_component::PyTestComponent>()?;
+    m.add_class::<model::PyModelBuilder>()?;
+    m.add_class::<model::PyModel>()?;
+    m.add_class::<example_component::TestComponentBuilder>()?;
     Ok(())
 }
 

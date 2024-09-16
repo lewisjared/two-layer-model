@@ -109,11 +109,31 @@ class RequirementDefinition:
     units: str
     requirement_type: RequirementType
 
-class Component(Protocol):
+class ComponentBuilder(Protocol):
     """A component of the model that can be solved"""
 
     @classmethod
-    def from_parameters(cls: type[T], parameters: dict[str, F]) -> T: ...
+    def from_parameters(cls: type[T], parameters: dict[str, F]) -> T:
+        """
+        Create a builder object from parameters
+
+        Returns
+        -------
+        Builder that can create a Component
+        """
+    def build(self) -> Component:
+        """
+        Create a concrete component
+
+        Returns
+        -------
+        Component object that can be solved
+        or coupled with other components via a `Model`.
+        """
+
+class Component(Protocol):
+    """A component of the model that can be solved"""
+
     def definitions(self) -> list[RequirementDefinition]: ...
     def solve(
         self, t_current: float, t_next: float, input_state: dict[str, float]

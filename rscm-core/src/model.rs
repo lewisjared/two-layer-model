@@ -51,7 +51,7 @@ pub struct ModelBuilder {
     components: Vec<C>,
     exogenous_variables: TimeseriesCollection,
     initial_values: InputState,
-    time_axis: Arc<TimeAxis>,
+    pub time_axis: Arc<TimeAxis>,
 }
 
 /// Checks if the new definition is valid

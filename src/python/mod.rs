@@ -2,20 +2,11 @@ use crate::two_layer::{TwoLayerComponent, TwoLayerComponentParameters};
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
 use pyo3_stub_gen::define_stub_info_gatherer;
-use rscm_core::component::RequirementDefinition;
-use rscm_core::component::{Component, InputState};
-use rscm_core::python::core;
-use rscm_core::timeseries::{FloatValue, Time};
-use rscm_core::{impl_component, impl_component_from_parameters};
-use std::collections::HashMap;
+use rscm_core::create_component_builder;
+use rscm_core::python::{core, PyComponent};
 
-#[pyclass]
-#[pyo3(name = "TwoLayerComponent")]
-pub struct PyTwoLayerComponent(pub TwoLayerComponent);
-
-impl_component!(PyTwoLayerComponent);
-impl_component_from_parameters!(
-    PyTwoLayerComponent,
+create_component_builder!(
+    TwoLayerComponentBuilder,
     TwoLayerComponent,
     TwoLayerComponentParameters
 );
@@ -24,7 +15,7 @@ impl_component_from_parameters!(
 #[pyo3(name = "_lib")]
 fn two_layer_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(core))?;
-    m.add_class::<PyTwoLayerComponent>()?;
+    m.add_class::<TwoLayerComponentBuilder>()?;
 
     set_path(m, "two_layer_model._lib.core", "core")?;
 
