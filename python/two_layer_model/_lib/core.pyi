@@ -173,7 +173,63 @@ class PythonComponent(Component):
     def build(self, component: CustomComponent) -> PythonComponent: ...
 
 class ModelBuilder:
+    """Builder for a model"""
+
     def __init__(self): ...
     def with_time_axis(self, time_axis: TimeAxis) -> Self: ...
     def with_py_component(self, component: PythonComponent) -> Self: ...
     def with_rust_component(self, component: RustComponent) -> Self: ...
+    def build(self) -> Model:
+        """
+        Build a concrete model from the provided information.
+
+        Raises
+        ------
+        Exception
+            If the model cannot be solved because the provided information is
+            inconsistent.
+
+            TODO: improve this error reporting
+
+        Returns
+        -------
+        Concrete model that can be solved
+        """
+
+class Model:
+    """
+    A coupled set of components that are solved on a common time axis.
+
+    These components are solved over time steps defined by the ['time_axis'].
+    Components may pass state between themselves.
+    Each component may require information from other components to be
+    solved (endogenous) or predefined data (exogenous).
+
+    For example, a component to calculate the
+    Effective Radiative Forcing(ERF) of CO_2 may require
+    CO_2 concentrations as input state and provide CO_2 ERF.
+    The component is agnostic about where/how that state is defined.
+    If the model has no components which provide CO_2 concentrations,
+    then a CO_2 concentration timeseries must be defined externally.
+    If the model also contains a carbon cycle component which produced
+    CO_2 concentrations, then the ERF component will be solved after
+    the carbon cycle model.
+    """
+
+    def current_time(self) -> F: ...
+    def current_time_bounds(self) -> (F, F): ...
+    def step(self): ...
+    def run(self): ...
+    def as_dot(self) -> str: ...
+    def finished(self) -> bool: ...
+    def timeseries(self) -> TimeseriesCollection:
+        """
+        Get the timeseries associated with the model.
+
+        These timeseries will have the same time axis as the model.
+        Any endrogenous values that have not yet been solved for will be NaN.
+
+        Returns
+        -------
+        Clone of the timeseries held by the model
+        """

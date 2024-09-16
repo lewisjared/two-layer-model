@@ -1,7 +1,9 @@
 use crate::model::{Model, ModelBuilder};
 use crate::python::component::PyPythonComponent;
 use crate::python::timeseries::PyTimeAxis;
+use crate::python::timeseries_collection::PyTimeseriesCollection;
 use crate::python::PyRustComponent;
+use crate::timeseries::Time;
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -43,6 +45,10 @@ impl PyModelBuilder {
         self_.0.time_axis = time_axis;
         Ok(self_)
     }
+
+    fn build(&self) -> PyResult<PyModel> {
+        Ok(PyModel(self.0.build()))
+    }
 }
 
 #[pyclass]
@@ -52,4 +58,32 @@ pub struct PyModel(pub Model);
 #[pymethods]
 impl PyModel {
     // Not exposing initialiser deliberately
+
+    fn current_time(&self) -> Time {
+        self.0.current_time()
+    }
+
+    fn current_time_bounds(&self) -> (Time, Time) {
+        self.0.current_time_bounds()
+    }
+
+    fn step(mut self_: PyRefMut<Self>) {
+        self_.0.step()
+    }
+    fn run(mut self_: PyRefMut<Self>) {
+        self_.0.step()
+    }
+
+    fn as_dot(&self) -> String {
+        let dot = self.0.as_dot();
+        format!("{:?}", dot)
+    }
+
+    fn finished(&self) -> bool {
+        self.0.finished()
+    }
+
+    fn timeseries(&self) -> PyTimeseriesCollection {
+        PyTimeseriesCollection(self.0.timeseries().clone())
+    }
 }

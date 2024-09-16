@@ -9,7 +9,7 @@ pub enum VariableType {
     Endogenous,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TimeseriesItem {
     pub timeseries: Timeseries<FloatValue>,
     pub name: String,
@@ -18,7 +18,7 @@ pub struct TimeseriesItem {
 
 /// A collection of time series data.
 /// Allows for easy access to time series data by name across the whole model
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TimeseriesCollection {
     timeseries: Vec<TimeseriesItem>,
 }
