@@ -1,6 +1,7 @@
 use crate::model::{Model, ModelBuilder};
+use crate::python::component::PyPythonComponent;
 use crate::python::timeseries::PyTimeAxis;
-use crate::python::PyComponent;
+use crate::python::PyRustComponent;
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -14,11 +15,22 @@ impl PyModelBuilder {
         Self(ModelBuilder::new())
     }
 
-    fn with_component<'py>(
+    /// Add a component that is defined in rust
+    fn with_rust_component<'py>(
         mut self_: PyRefMut<'py, Self>,
-        component: Bound<'py, PyComponent>,
+        component: Bound<'py, PyRustComponent>,
     ) -> PyResult<PyRefMut<'py, Self>> {
         self_.0.with_component(component.borrow().0.clone());
+        Ok(self_)
+    }
+
+    /// Pass a component that is defined in python (UserDerivedComponent)
+    fn with_py_component<'py>(
+        mut self_: PyRefMut<'py, Self>,
+        component: Bound<'py, PyPythonComponent>,
+    ) -> PyResult<PyRefMut<'py, Self>> {
+        let user_derived_component = component.borrow().0.clone();
+        self_.0.with_component(user_derived_component);
         Ok(self_)
     }
 

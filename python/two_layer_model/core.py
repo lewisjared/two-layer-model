@@ -5,11 +5,11 @@ Core classes and functions for Rust Simple Climate Models (RSCMs)
 from two_layer_model._lib.core import (
     InterpolationStrategy,
     ModelBuilder,
+    PythonComponent,
     RequirementDefinition,
     TimeAxis,
     Timeseries,
     TimeseriesCollection,
-    UserDerivedComponent,
     VariableType,
 )
 
@@ -20,6 +20,6 @@ __all__ = [
     "TimeAxis",
     "Timeseries",
     "TimeseriesCollection",
-    "UserDerivedComponent",
+    "PythonComponent",
     "VariableType",
 ]

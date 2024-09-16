@@ -3,7 +3,6 @@ from two_layer_model.core import ModelBuilder
 
 
 def test_model(time_axis):
-    TwoLayerComponentBuilder
     component = TwoLayerComponentBuilder.from_parameters(
         dict(
             lambda0=0.0,
@@ -16,4 +15,4 @@ def test_model(time_axis):
     ).build()
 
     builder = ModelBuilder()
-    builder.with_time_axis(time_axis).with_component(component)
+    builder.with_time_axis(time_axis).with_rust_component(component)

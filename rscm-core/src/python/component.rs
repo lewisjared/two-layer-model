@@ -54,8 +54,8 @@ macro_rules! create_component_builder {
                     Err(e) => Err(PyValueError::new_err(format!("{}", e))),
                 }
             }
-            pub fn build(&self) -> PyComponent {
-                PyComponent(std::sync::Arc::new(<$rust_component>::from_parameters(
+            pub fn build(&self) -> PyRustComponent {
+                PyRustComponent(std::sync::Arc::new(<$rust_component>::from_parameters(
                     self.parameters.clone(),
                 )))
             }
@@ -63,23 +63,24 @@ macro_rules! create_component_builder {
     };
 }
 
-/// Python wrapper for a Rust-defined class
+/// Python wrapper for a Component defined in Rust
 ///
-/// Instances of ['PyComponent'] are created via a ComponentBuilder.
-#[pyclass]
+/// Instances of ['PyRustComponent'] are created via an associated ComponentBuilder for each
+/// component of interest.
 #[derive(Debug, Clone)]
-pub struct PyComponent(pub Arc<dyn Component + Send + Sync>);
-
-impl_component!(PyComponent);
-
-/// Translate a provided PyObject (Python Class) into a Component
 #[pyclass]
+#[pyo3{name = "RustComponent"}]
+pub struct PyRustComponent(pub Arc<dyn Component + Send + Sync>);
+
+impl_component!(PyRustComponent);
+
+/// Wrapper to convert a PyObject (Python Class) into a Component
 #[derive(Debug)]
-pub struct UserDerivedComponent {
-    component: PyObject,
+pub struct PythonComponent {
+    pub component: PyObject,
 }
 
-impl Component for UserDerivedComponent {
+impl Component for PythonComponent {
     fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![]
     }
@@ -107,17 +108,17 @@ impl Component for UserDerivedComponent {
     }
 }
 
-/// Python class to expose a UserDerivedComponent
+/// Interface for creating Components from Python
 #[pyclass]
-#[pyo3(name = "UserDerivedComponent")]
-pub struct PyUserDerivedComponent(UserDerivedComponent);
+#[pyo3(name = "PythonComponent")]
+pub struct PyPythonComponent(pub Arc<PythonComponent>);
 
 #[pymethods]
-impl PyUserDerivedComponent {
-    #[new]
-    pub fn new(component: Py<PyAny>) -> Self {
-        Self(UserDerivedComponent { component })
+impl PyPythonComponent {
+    #[staticmethod]
+    pub fn build(component: Py<PyAny>) -> Self {
+        Self(Arc::new(PythonComponent { component }))
     }
 }
 
-impl_component!(PyUserDerivedComponent);
+impl_component!(PyPythonComponent);

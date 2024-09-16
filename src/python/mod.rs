@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
 use pyo3_stub_gen::define_stub_info_gatherer;
 use rscm_core::create_component_builder;
-use rscm_core::python::{core, PyComponent};
+use rscm_core::python::{core, PyRustComponent};
 
 create_component_builder!(
     TwoLayerComponentBuilder,

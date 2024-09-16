@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Protocol, TypeVar
+from typing import Protocol, Self, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -109,28 +109,6 @@ class RequirementDefinition:
     units: str
     requirement_type: RequirementType
 
-class ComponentBuilder(Protocol):
-    """A component of the model that can be solved"""
-
-    @classmethod
-    def from_parameters(cls: type[T], parameters: dict[str, F]) -> T:
-        """
-        Create a builder object from parameters
-
-        Returns
-        -------
-        Builder that can create a Component
-        """
-    def build(self) -> Component:
-        """
-        Create a concrete component
-
-        Returns
-        -------
-        Component object that can be solved
-        or coupled with other components via a `Model`.
-        """
-
 class Component(Protocol):
     """A component of the model that can be solved"""
 
@@ -138,6 +116,11 @@ class Component(Protocol):
     def solve(
         self, t_current: float, t_next: float, input_state: dict[str, float]
     ) -> dict[str, float]: ...
+
+class RustComponent(Component):
+    """
+    Component that has been defined in Rust
+    """
 
 class CustomComponent(Protocol):
     """
@@ -153,7 +136,44 @@ class CustomComponent(Protocol):
         self, t_current: float, t_next: float, input_state: dict[str, float]
     ) -> dict[str, float]: ...
 
-class TestComponent(Component): ...
+class ComponentBuilder(Protocol):
+    """A component of the model that can be solved"""
 
-class UserDerivedComponent(Component):
-    def __init__(self, component: CustomComponent) -> UserDerivedComponent: ...
+    @classmethod
+    def from_parameters(cls: type[T], parameters: dict[str, F]) -> T:
+        """
+        Create a builder object from parameters
+
+        Returns
+        -------
+        Builder that can create a Component
+        """
+    def build(self) -> RustComponent:
+        """
+        Create a concrete component
+
+        Returns
+        -------
+        Component object that can be solved
+        or coupled with other components via a `Model`.
+        """
+
+class TestComponentBuilder(ComponentBuilder): ...
+
+class PythonComponent(Component):
+    """
+    A component defined in Python.
+
+    This component must conform with the `CustomComponent` protocol.
+
+    TODO: Example of creating a custom component
+    """
+
+    @staticmethod
+    def build(self, component: CustomComponent) -> PythonComponent: ...
+
+class ModelBuilder:
+    def __init__(self): ...
+    def with_time_axis(self, time_axis: TimeAxis) -> Self: ...
+    def with_py_component(self, component: PythonComponent) -> Self: ...
+    def with_rust_component(self, component: RustComponent) -> Self: ...

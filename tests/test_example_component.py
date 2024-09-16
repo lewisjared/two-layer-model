@@ -1,10 +1,10 @@
 import pytest
 
-from two_layer_model._lib.core import TestComponent
-from two_layer_model.core import RequirementDefinition, UserDerivedComponent
+from two_layer_model._lib.core import TestComponentBuilder
+from two_layer_model.core import PythonComponent, RequirementDefinition
 
 
-class PythonComponent:
+class ExamplePythonComponent:
     def definitions(self) -> list[RequirementDefinition]:
         return []
 
@@ -15,7 +15,7 @@ class PythonComponent:
 
 
 def test_component_definitions():
-    component = TestComponent.from_parameters({"p": 12})
+    component = TestComponentBuilder.from_parameters({"p": 12}).build()
 
     definitions = component.definitions()
     assert len(definitions) == 2
@@ -25,19 +25,19 @@ def test_component_definitions():
 
 def test_component_invalid():
     with pytest.raises(ValueError, match="missing field `p`"):
-        TestComponent.from_parameters({})
+        TestComponentBuilder.from_parameters({})
 
     with pytest.raises(
         ValueError,
         match="unexpected type: 'NoneType' object cannot be converted to 'Mapping'",
     ):
         # noinspection PyTypeChecker
-        TestComponent.from_parameters(None)
+        TestComponentBuilder.from_parameters(None).build()
 
 
 def test_user_derived_create_and_solve():
-    py_component = PythonComponent()
-    component = UserDerivedComponent(py_component)
+    py_component = ExamplePythonComponent()
+    component = PythonComponent.build(py_component)
 
     # TODO: resolve later
     assert component.definitions() == []
