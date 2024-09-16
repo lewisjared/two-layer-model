@@ -1,15 +1,13 @@
-use crate::models::carbon_cycle::{CarbonCycleParameters, SolverOptions};
-use crate::models::co2_erf::CO2ERFParameters;
 use numpy::array;
 use numpy::ndarray::Array;
+use rscm_components::{
+    CO2ERFParameters, CarbonCycleComponent, CarbonCycleParameters, SolverOptions, CO2ERF,
+};
 use rscm_core::component::InputState;
 use rscm_core::interpolate::strategies::{InterpolationStrategy, NextStrategy, PreviousStrategy};
 use rscm_core::model::ModelBuilder;
 use rscm_core::timeseries::{FloatValue, Time, TimeAxis, Timeseries};
 use std::sync::Arc;
-
-mod carbon_cycle;
-mod co2_erf;
 
 #[test]
 fn test_carbon_cycle() {
@@ -64,7 +62,7 @@ fn test_carbon_cycle() {
     // Build a model consisting of a single carbon cycle component
     let mut model = builder
         .with_component(Arc::new(
-            carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
+            CarbonCycleComponent::from_parameters(CarbonCycleParameters {
                 tau,
                 conc_pi,
                 alpha_temperature,
@@ -151,16 +149,17 @@ fn test_coupled_model() {
 
     // Build a model consisting of a carbon cycle and a CO2-only ERF component
     let mut model = builder
-        .with_component(Arc::new(
-            carbon_cycle::CarbonCycleComponent::from_parameters(CarbonCycleParameters {
+        .with_component(Arc::new(CarbonCycleComponent::from_parameters(
+            CarbonCycleParameters {
                 tau,
                 conc_pi,
                 alpha_temperature,
-            }),
-        ))
-        .with_component(Arc::new(co2_erf::CO2ERF::from_parameters(
-            CO2ERFParameters { erf_2xco2, conc_pi },
+            },
         )))
+        .with_component(Arc::new(CO2ERF::from_parameters(CO2ERFParameters {
+            erf_2xco2,
+            conc_pi,
+        })))
         .with_time_axis(time_axis)
         .with_exogenous_variable("Emissions|CO2|Anthropogenic", emissions)
         .with_exogenous_variable("Surface Temperature", surface_temp)

@@ -2,6 +2,7 @@ use crate::two_layer::{TwoLayerComponent, TwoLayerComponentParameters};
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
 use pyo3_stub_gen::define_stub_info_gatherer;
+use rscm_components::python::components;
 use rscm_core::create_component_builder;
 use rscm_core::python::{core, PyRustComponent};
 
@@ -15,9 +16,11 @@ create_component_builder!(
 #[pyo3(name = "_lib")]
 fn two_layer_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(core))?;
+    m.add_wrapped(wrap_pymodule!(components))?;
     m.add_class::<TwoLayerComponentBuilder>()?;
 
     set_path(m, "two_layer_model._lib.core", "core")?;
+    set_path(m, "two_layer_model._lib.components", "components")?;
 
     Ok(())
 }

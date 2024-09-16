@@ -1,17 +1,17 @@
-use nalgebra::Vector3;
+use crate::constants::GTC_PER_PPM;
+use ode_solvers::Vector3;
 use rscm_core::component::{
     Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
 };
 use rscm_core::errors::RSCMResult;
 use rscm_core::ivp::{get_last_step, IVPBuilder, IVP};
 use rscm_core::timeseries::{FloatValue, Time};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
-
-const GTC_PER_PPM: FloatValue = 2.13;
 type ModelState = Vector3<FloatValue>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct CarbonCycleParameters {
     /// Timescale of the box's response
     /// unit: yr
@@ -24,6 +24,7 @@ pub struct CarbonCycleParameters {
     pub alpha_temperature: FloatValue,
 }
 
+// TODO: Move this into core
 #[derive(Debug, Clone)]
 pub struct SolverOptions {
     pub step_size: FloatValue,

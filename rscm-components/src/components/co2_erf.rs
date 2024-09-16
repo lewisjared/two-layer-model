@@ -3,8 +3,9 @@ use rscm_core::component::{
 };
 use rscm_core::errors::RSCMResult;
 use rscm_core::timeseries::{FloatValue, Time};
+use serde::Deserialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct CO2ERFParameters {
     /// ERF due to a doubling of atmospheric CO_2 concentrations
     /// unit: W / m^2
