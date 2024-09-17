@@ -33,9 +33,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
-
-      - name: Prepare LD_LIBRARY_PATH (Ubuntu only)
-        run: echo LD_LIBRARY_PATH=${pythonLocation}/lib >> $GITHUB_ENV
       - name: Set up uv
           # Install latest uv version using the installer
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
