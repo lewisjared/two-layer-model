@@ -43,7 +43,6 @@ jobs:
         # Install dependencies and builds the rust crate
         run: uv sync --all-extras --dev
         env:
-          PYO3_PRINT_CONFIG: 1
           RUST_BACKTRACE: 1
       - name: Run python tests
         run: uv run pytest tests
