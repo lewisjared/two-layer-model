@@ -63,6 +63,18 @@ macro_rules! create_component_builder {
     };
 }
 
+#[pymethods]
+impl RequirementDefinition {
+    #[new]
+    pub fn new_python(name: String, unit: String, requirement_type: RequirementType) -> Self {
+        Self {
+            name,
+            unit,
+            requirement_type,
+        }
+    }
+}
+
 /// Python wrapper for a Component defined in Rust
 ///
 /// Instances of ['PyRustComponent'] are created via an associated ComponentBuilder for each
@@ -82,7 +94,15 @@ pub struct PythonComponent {
 
 impl Component for PythonComponent {
     fn definitions(&self) -> Vec<RequirementDefinition> {
-        vec![]
+        Python::with_gil(|py| {
+            let py_result = self
+                .component
+                .bind(py)
+                .call_method("definitions", (), None)
+                .unwrap();
+            let py_result: Vec<RequirementDefinition> = py_result.extract().unwrap();
+            py_result
+        })
     }
 
     fn solve(

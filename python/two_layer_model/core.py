@@ -7,6 +7,7 @@ from two_layer_model._lib.core import (
     ModelBuilder,
     PythonComponent,
     RequirementDefinition,
+    RequirementType,
     TimeAxis,
     Timeseries,
     TimeseriesCollection,
@@ -16,6 +17,7 @@ from two_layer_model._lib.core import (
 __all__ = [
     "InterpolationStrategy",
     "RequirementDefinition",
+    "RequirementType",
     "ModelBuilder",
     "TimeAxis",
     "Timeseries",

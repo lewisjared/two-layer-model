@@ -210,15 +210,15 @@ model = (
     .with_initial_values(initial_state)
 ).build()
 
+
 # %% [markdown]
 # The graph can be visualised with each node representing a component and the edges
 # describe the flow of state through the model.
 # This graph is solved using a breadth first search starting from the "0" node.
 
+
 # %%
 # This requires graphviz to be installed
-
-
 def view_pydot(pdot):
     """Show a dot graph inside a notebook"""
     from IPython.display import Image, display
@@ -237,9 +237,11 @@ view_pydot(graph)
 # You can either step through the model step by step or run for all timesteps at once
 
 # %%
-model.step()
-model.step()
+model.current_time_bounds()
 
+# %%
+model.step()
+model.current_time_bounds()
 
 # %% [markdown]
 # The results from the run can be extracted using `timeseries` and then converted to a

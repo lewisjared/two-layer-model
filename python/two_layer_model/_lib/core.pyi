@@ -174,7 +174,7 @@ class PythonComponent(Component):
     """
 
     @staticmethod
-    def build(self, component: CustomComponent) -> PythonComponent: ...
+    def build(component: CustomComponent) -> PythonComponent: ...
 
 class ModelBuilder:
     """Builder for a model"""
