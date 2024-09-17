@@ -33,6 +33,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
+
+      - name: Prepare LD_LIBRARY_PATH (Ubuntu only)
+        run: echo LD_LIBRARY_PATH=${pythonLocation}/lib >> $GITHUB_ENV
       - name: Set up uv
           # Install latest uv version using the installer
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -40,6 +43,7 @@ jobs:
         # Install dependencies and builds the rust crate
         run: uv sync --all-extras --dev
         env:
+          PYO3_PRINT_CONFIG: 1
           RUST_BACKTRACE: 1
       - name: Run python tests
         run: uv run pytest tests
