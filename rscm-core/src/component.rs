@@ -157,7 +157,7 @@ pub trait Component: Debug {
             .iter()
             .filter(|d| {
                 (d.requirement_type == RequirementType::Input)
-                    | (d.requirement_type == RequirementType::InputAndOutput)
+                    || (d.requirement_type == RequirementType::InputAndOutput)
             })
             .cloned()
             .collect()
@@ -177,7 +177,7 @@ pub trait Component: Debug {
             .iter()
             .filter(|d| {
                 (d.requirement_type == RequirementType::Output)
-                    | (d.requirement_type == RequirementType::InputAndOutput)
+                    || (d.requirement_type == RequirementType::InputAndOutput)
             })
             .cloned()
             .collect()

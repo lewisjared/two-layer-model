@@ -37,6 +37,10 @@ impl PyTimeseriesCollection {
         }
     }
 
+    pub fn names(&self) -> Vec<String> {
+        self.0.iter().map(|x| x.name.clone()).collect()
+    }
+
     pub fn timeseries(&self) -> Vec<PyTimeseries> {
         self.0
             .iter()

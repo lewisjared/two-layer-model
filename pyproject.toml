@@ -29,6 +29,9 @@ dev-dependencies = [
     "pip>=24.2",
     "jupytext>=1.16.4",
     "notebook>=7.2.2",
+    "seaborn>=0.13.2",
+    "matplotlib>=3.9.2",
+    "pydot>=3.0.1",
 ]
 
 

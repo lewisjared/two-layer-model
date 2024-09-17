@@ -419,7 +419,7 @@ impl Model {
                 let requirement = er.weight();
                 match requirement {
                     None => "".to_string(),
-                    Some(r) => format!("label = \"{:?}\"", r),
+                    Some(r) => format!("label = {:?}", r.name),
                 }
             },
             &|_, (_, component)| match component {

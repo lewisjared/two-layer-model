@@ -382,6 +382,14 @@ where
     pub fn values(&self) -> ArrayView1<T> {
         self.values.view()
     }
+
+    pub fn units(&self) -> &str {
+        &self.units
+    }
+
+    pub fn time_axis(&self) -> Arc<TimeAxis> {
+        self.time_axis.clone()
+    }
 }
 
 #[cfg(test)]

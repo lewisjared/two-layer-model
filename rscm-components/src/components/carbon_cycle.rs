@@ -55,7 +55,12 @@ impl CarbonCycleComponent {
 impl Component for CarbonCycleComponent {
     fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![
-            // Inputs
+            RequirementDefinition::new(
+                "Emissions|CO2|Anthropogenic",
+                "GtC / yr",
+                RequirementType::Input,
+            ),
+            RequirementDefinition::new("Surface Temperature", "K", RequirementType::Input),
             RequirementDefinition::new(
                 "Atmospheric Concentration|CO2",
                 "ppm",
@@ -70,18 +75,6 @@ impl Component for CarbonCycleComponent {
                 "Cumulative Land Uptake",
                 "Gt C",
                 RequirementType::InputAndOutput,
-            ),
-            RequirementDefinition::new(
-                "Emissions|CO2|Anthropogenic",
-                "GtC / yr",
-                RequirementType::Input,
-            ),
-            RequirementDefinition::new("Surface Temperature", "K", RequirementType::Input),
-            // Outputs
-            RequirementDefinition::new(
-                "Atmospheric Concentration|CO2",
-                "ppm",
-                RequirementType::Output,
             ),
         ]
     }

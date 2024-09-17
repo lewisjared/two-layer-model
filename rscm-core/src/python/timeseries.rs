@@ -137,6 +137,16 @@ impl PyTimeseries {
         *self.0.latest()
     }
 
+    #[getter]
+    fn units(&self) -> String {
+        self.0.units().to_string()
+    }
+
+    #[getter]
+    fn time_axis(&self) -> PyTimeAxis {
+        PyTimeAxis(self.0.time_axis())
+    }
+
     // TODO: Figure out how to return a mutable ref to self to enable chaining
     fn with_interpolation_strategy(&mut self, interpolation_strategy: PyInterpolationStrategy) {
         let interpolation_strategy: InterpolationStrategy = interpolation_strategy.into();
