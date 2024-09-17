@@ -25,6 +25,5 @@ pythonize = "0.21.1"
 
 [dependencies.pyo3]
 version = "0.21.0"
-# extension-module builds a python extension module and is required to use `cargo test`
 # "abi3-py38" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.8
-features = ["extension-module", "abi3-py38", "multiple-pymethods"]
+features = ["abi3-py38", "multiple-pymethods"]

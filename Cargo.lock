@@ -593,6 +593,7 @@ dependencies = [
  "numpy",
  "ode_solvers",
  "pyo3",
+ "pyo3-build-config",
  "pythonize",
  "rscm-components",
  "rscm-core",
