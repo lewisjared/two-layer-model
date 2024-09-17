@@ -42,17 +42,3 @@ These tests can be built and run using the following (or using RustRover):
 ```
 cargo test
 ```
-
-### Stub generation
-
-To make it easier to consume the extension module,
-
-In our case the exposed interface is probably simple enough to write the `.pyi` file by hand,
-but since we are playing around we can use [pyo3-stub-gen](https://github.com/Jij-Inc/pyo3-stub-gen) to automatically
-generate the stubs.
-
-The command to run is:
-
-```
-cargo run --bin stub_gen
-```

@@ -1,7 +1,6 @@
 use crate::two_layer::{TwoLayerComponent, TwoLayerComponentParameters};
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
-use pyo3_stub_gen::define_stub_info_gatherer;
 use rscm_components::python::components;
 use rscm_core::create_component_builder;
 use rscm_core::python::{core, PyRustComponent};
@@ -37,6 +36,3 @@ sys.modules['{path}'] = {module}
         Some(&m.dict()),
     )
 }
-
-// Define a function to gather stub information.
-define_stub_info_gatherer!(stub_info);
