@@ -237,15 +237,13 @@ view_pydot(graph)
 # You can either step through the model step by step or run for all timesteps at once
 
 # %%
-model.run()
+model.step()
+model.step()
+
 
 # %% [markdown]
 # The results from the run can be extracted using `timeseries` and then converted to a
 # scmdata object for easier plotting
-
-# %%
-timeseries_collection = model.timeseries()
-timeseries_collection
 
 
 # %%
@@ -273,10 +271,26 @@ def as_scmrun(timeseries_collection: TimeseriesCollection) -> RSCMRun:
     return RSCMRun(as_dataframe)
 
 
-results = as_scmrun(timeseries_collection)
+results = as_scmrun(model.timeseries())
 results
 
 # %%
-results.line_plot(hue="variable")
+results.filter(variable="Cumulative *", keep=False).line_plot(hue="variable")
+
+# %%
+model.run()
+
+# %%
+as_scmrun(model.timeseries()).filter(variable="Cumulative *", keep=False).line_plot(
+    hue="variable"
+)
+
+# %% [markdown]
+# ## Features to add
+#
+# * Hierachy of timeseries / n box timeseries
+# * Better hinting of required parameters
+# * Parameter handling
+# * Serialisation/deserialisation (
 
 # %%

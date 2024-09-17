@@ -103,7 +103,7 @@ impl PyModel {
         self_.0.step()
     }
     fn run(mut self_: PyRefMut<Self>) {
-        self_.0.step()
+        self_.0.run()
     }
 
     fn as_dot(&self) -> String {
