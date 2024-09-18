@@ -5,6 +5,7 @@ use nalgebra::max;
 use num::{Float, ToPrimitive};
 use numpy::ndarray::prelude::*;
 use numpy::ndarray::{Array, Array1, ViewRepr};
+use serde::{Deserialize, Serialize};
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -18,7 +19,7 @@ pub type Time = f64;
 /// This is a placeholder to make it easier to be able to use a generic representation of value.
 pub type FloatValue = f64;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TimeAxis {
     bounds: Array1<Time>,
 }
@@ -189,7 +190,7 @@ impl TimeAxis {
 
 /// A contiguous set of values
 ///
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Timeseries<T>
 where
     T: Float,

@@ -2,6 +2,7 @@ use crate::errors::RSCMResult;
 use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use pyo3::pyclass;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
@@ -105,7 +106,7 @@ impl IntoIterator for InputState {
 pub type OutputState = InputState;
 
 #[pyclass]
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, Serialize, Deserialize)]
 pub enum RequirementType {
     Input,
     Output,
@@ -113,7 +114,7 @@ pub enum RequirementType {
 }
 
 #[pyclass]
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, Serialize, Deserialize)]
 pub struct RequirementDefinition {
     #[pyo3(get, set)]
     pub name: String,
@@ -148,6 +149,7 @@ impl RequirementDefinition {
 ///   components as part of a coupled system or from exogenous data.
 /// * outputs: Information that is solved by the component
 
+#[typetag::serde(tag = "type")]
 pub trait Component: Debug {
     fn definitions(&self) -> Vec<RequirementDefinition>;
 

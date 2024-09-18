@@ -3,9 +3,9 @@ use rscm_core::component::{
 };
 use rscm_core::errors::RSCMResult;
 use rscm_core::timeseries::{FloatValue, Time};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CO2ERFParameters {
     /// ERF due to a doubling of atmospheric CO_2 concentrations
     /// unit: W / m^2
@@ -15,7 +15,7 @@ pub struct CO2ERFParameters {
     pub conc_pi: FloatValue,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// CO2 effective radiative forcing (ERF) calculations
 pub struct CO2ERF {
     parameters: CO2ERFParameters,
@@ -27,6 +27,7 @@ impl CO2ERF {
     }
 }
 
+#[typetag::serde]
 impl Component for CO2ERF {
     fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![

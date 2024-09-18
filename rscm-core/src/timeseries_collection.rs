@@ -1,6 +1,7 @@
 use crate::timeseries::{FloatValue, Timeseries};
+use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[pyo3::pyclass]
 pub enum VariableType {
     /// Values that are defined outside of the model
@@ -9,7 +10,7 @@ pub enum VariableType {
     Endogenous,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimeseriesItem {
     pub timeseries: Timeseries<FloatValue>,
     pub name: String,
@@ -18,7 +19,7 @@ pub struct TimeseriesItem {
 
 /// A collection of time series data.
 /// Allows for easy access to time series data by name across the whole model
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimeseriesCollection {
     timeseries: Vec<TimeseriesItem>,
 }

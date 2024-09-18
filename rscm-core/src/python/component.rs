@@ -3,6 +3,7 @@ use crate::component::{Component, InputState, OutputState};
 use crate::errors::RSCMResult;
 use crate::timeseries::{FloatValue, Time};
 use pyo3::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 // Reexport the Requirement Definition
@@ -92,6 +93,7 @@ pub struct PythonComponent {
     pub component: PyObject,
 }
 
+#[typetag::serde]
 impl Component for PythonComponent {
     fn definitions(&self) -> Vec<RequirementDefinition> {
         Python::with_gil(|py| {
@@ -124,6 +126,39 @@ impl Component for PythonComponent {
 
             let state = OutputState::from_hashmap(py_result.extract().unwrap());
             Ok(state)
+        })
+    }
+}
+
+impl Serialize for PythonComponent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        Python::with_gil(|py| {
+            let py_result = self
+                .component
+                .bind(py)
+                .call_method("to_json", (), None)
+                .unwrap();
+            let py_result: String = py_result.extract().unwrap();
+            serializer.serialize_str(&py_result)
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for PythonComponent {
+    fn deserialize<D>(deserializer: D) -> Result<PythonComponent, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s: String = Deserialize::deserialize(deserializer)?;
+        Python::with_gil(|py| {
+            let component = py
+                .eval_bound(&format!("Component.from_json('{}')", s), None, None)
+                .unwrap()
+                .to_object(py);
+            Ok(PythonComponent { component })
         })
     }
 }

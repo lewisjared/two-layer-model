@@ -9,13 +9,15 @@ categories = ["science"]
 workspace = ".."
 
 [dependencies]
-numpy = "0.21.0"
 ode_solvers = "0.4.0"
+ndarray = { version = "*", features = ["serde-1"] }
+numpy = "0.21.0"
 # Pin nlgebra until new release of ode_solvers
 nalgebra = "0.32.6"
-petgraph = "0.6.5"
-serde = { version = "1.0", features = ["derive"] }
+petgraph = { version = "0.6.5", features = ["serde-1"] }
+serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
+typetag = "0.2"
 log = "0.4"
 num = "0.4"
 is_close = "0.1"
