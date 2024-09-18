@@ -124,18 +124,18 @@ impl PyModel {
     ///
     /// This includes the components, their internal state and the model's
     /// state.
-    fn to_json(&self) -> PyResult<String> {
-        let serialised = serde_json::to_string(&self.0);
+    fn to_toml(&self) -> PyResult<String> {
+        let serialised = toml::to_string(&self.0);
         match serialised {
             Ok(serialised) => Ok(serialised),
             Err(e) => Err(PyValueError::new_err(format!("{}", e))),
         }
     }
 
-    /// Initialise a model from a JSON representation
+    /// Initialise a model from a TOML representation
     #[staticmethod]
-    fn from_json(string: String) -> PyResult<Self> {
-        let deserialised = serde_json::from_str::<Model>(string.as_str());
+    fn from_toml(string: String) -> PyResult<Self> {
+        let deserialised = toml::from_str::<Model>(string.as_str());
         match deserialised {
             Ok(deserialised) => Ok(PyModel(deserialised)),
             Err(e) => Err(PyValueError::new_err(format!("{}", e))),
