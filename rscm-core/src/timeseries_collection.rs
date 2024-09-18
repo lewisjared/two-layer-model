@@ -55,6 +55,8 @@ impl TimeseriesCollection {
             name,
             variable_type,
         });
+        // Ensure the order of the serialised timeseries is stable
+        self.timeseries.sort_unstable_by_key(|x| x.name.clone());
     }
 
     pub fn get_by_name(&self, name: &str) -> Option<&TimeseriesItem> {

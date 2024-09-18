@@ -16,7 +16,6 @@ numpy = "0.21.0"
 nalgebra = "0.32.6"
 petgraph = { version = "0.6.5", features = ["serde-1"] }
 serde = { version = "1.0", features = ["derive", "rc"] }
-serde_json = "1.0"
 typetag = "0.2"
 log = "0.4"
 num = "0.4"
@@ -25,8 +24,10 @@ thiserror = "1.0"
 pythonize = "0.21.1"
 toml = "0.8.19"
 
-
 [dependencies.pyo3]
 version = "0.21.0"
 # "abi3-py38" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.8
 features = ["abi3-py38", "multiple-pymethods"]
+
+[dev-dependencies]
+serde_json = "1.0"

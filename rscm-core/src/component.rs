@@ -111,6 +111,7 @@ pub enum RequirementType {
     Input,
     Output,
     InputAndOutput, // TODO: Figure out how to compose input and output together
+    EmptyLink,
 }
 
 #[pyclass]
