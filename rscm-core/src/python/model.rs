@@ -5,6 +5,7 @@ use crate::python::timeseries::{PyTimeAxis, PyTimeseries};
 use crate::python::timeseries_collection::PyTimeseriesCollection;
 use crate::python::PyRustComponent;
 use crate::timeseries::{FloatValue, Time};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 
@@ -117,5 +118,27 @@ impl PyModel {
 
     fn timeseries(&self) -> PyTimeseriesCollection {
         PyTimeseriesCollection(self.0.timeseries().clone())
+    }
+
+    /// Generate a JSON representation of the model
+    ///
+    /// This includes the components, their internal state and the model's
+    /// state.
+    fn to_json(&self) -> PyResult<String> {
+        let serialised = serde_json::to_string(&self.0);
+        match serialised {
+            Ok(serialised) => Ok(serialised),
+            Err(e) => Err(PyValueError::new_err(format!("{}", e))),
+        }
+    }
+
+    /// Initialise a model from a JSON representation
+    #[staticmethod]
+    fn from_json(string: String) -> PyResult<Self> {
+        let deserialised = serde_json::from_str::<Model>(string.as_str());
+        match deserialised {
+            Ok(deserialised) => Ok(PyModel(deserialised)),
+            Err(e) => Err(PyValueError::new_err(format!("{}", e))),
+        }
     }
 }

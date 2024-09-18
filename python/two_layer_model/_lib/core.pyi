@@ -240,3 +240,10 @@ class Model:
         -------
         Clone of the timeseries held by the model
         """
+
+    def to_json(self) -> str:
+        pass
+
+    @classmethod
+    def from_json(cls: type[T], serialised_model: str) -> T:
+        pass

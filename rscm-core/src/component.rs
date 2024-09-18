@@ -150,7 +150,7 @@ impl RequirementDefinition {
 /// * outputs: Information that is solved by the component
 
 #[typetag::serde(tag = "type")]
-pub trait Component: Debug {
+pub trait Component: Debug + Send + Sync {
     fn definitions(&self) -> Vec<RequirementDefinition>;
 
     /// Variables that are required to solve this component

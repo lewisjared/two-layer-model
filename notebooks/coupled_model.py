@@ -293,6 +293,3 @@ as_scmrun(model.timeseries()).filter(variable="Cumulative *", keep=False).line_p
 # * Hierachy of timeseries / n box timeseries
 # * Better hinting of required parameters
 # * Parameter handling
-# * Serialisation/deserialisation (
-
-# %%

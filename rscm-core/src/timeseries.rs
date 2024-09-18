@@ -5,7 +5,7 @@ use nalgebra::max;
 use num::{Float, ToPrimitive};
 use numpy::ndarray::prelude::*;
 use numpy::ndarray::{Array, Array1, ViewRepr};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -188,6 +188,15 @@ impl TimeAxis {
     }
 }
 
+/// A helper to deserialize `f64`, treating JSON null as f64::NAN.
+/// See https://github.com/serde-rs/json/issues/202
+fn deserialize_float_null_as_nan<'de, D: Deserializer<'de>>(
+    des: D,
+) -> Result<FloatValue, D::Error> {
+    let optional = Option::<FloatValue>::deserialize(des)?;
+    Ok(optional.unwrap_or(FloatValue::NAN))
+}
+
 /// A contiguous set of values
 ///
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -196,6 +205,7 @@ where
     T: Float,
 {
     units: String,
+    #[serde(deserialize_with = "deserialize_float_null_as_nan")]
     values: Array1<T>,
     // Using a reference counted time axis to avoid having to maintain multiple clones of the
     // time axis.

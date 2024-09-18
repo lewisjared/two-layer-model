@@ -18,11 +18,12 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graph::NodeIndex;
 use petgraph::visit::{Bfs, IntoNeighbors, IntoNodeIdentifiers, Visitable};
 use petgraph::Graph;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Index;
 use std::sync::Arc;
 
-type C = Arc<dyn Component + Send + Sync>;
+type C = Arc<dyn Component>;
 
 #[derive(Debug)]
 struct VariableDefinition {
@@ -305,7 +306,7 @@ impl Default for ModelBuilder {
 /// then a CO_2 concentration timeseries must be defined externally.
 /// If the model also contains a carbon cycle component which produced CO_2 concentrations,
 /// then the ERF component will be solved after the carbon cycle model.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Model {
     /// A directed graph with components as nodes and the edges defining the state dependencies
     /// between nodes.
