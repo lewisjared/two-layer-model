@@ -518,12 +518,12 @@ mod tests {
             .with_exogenous_variable("Emissions|CO2", get_emissions())
             .build();
 
-        let exp = "digraph {
-    0 [ ]
-    1 [ label = \"TestComponent { parameters: TestComponentParameters { p: 0.5 } }\"]
-    0 -> 1 [ ]
+        let exp = r#"digraph {
+    0 [ label = "NullComponent"]
+    1 [ label = "TestComponent { parameters: TestComponentParameters { p: 0.5 } }"]
+    0 -> 1 [ label = ""]
 }
-";
+"#;
 
         let res = format!("{:?}", model.as_dot());
         assert_eq!(res, exp);
@@ -622,6 +622,9 @@ data = [2020.0, 2021.0, 2022.0, 2023.0, 2024.0, 2025.0]
                 .unwrap()
                 .values()
         )
-        .all(|(x0, x1)| { is_close!(*x0, *x1) || (x0.is_nan() && x0.is_nan()) }))
+        .all(|(x0, x1)| { is_close!(*x0, *x1) || (x0.is_nan() && x0.is_nan()) }));
+
+        assert_eq!(model.current_time_bounds(), (2021.0, 2022.0));
+        assert_eq!(deserialised.current_time_bounds(), (2021.0, 2022.0));
     }
 }

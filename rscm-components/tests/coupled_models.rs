@@ -84,7 +84,7 @@ fn test_carbon_cycle() {
 
     model.run();
 
-    let co2_conc = model
+    let _co2_conc = model
         .timeseries()
         .get_timeseries_by_name("Atmospheric Concentration|CO2")
         .unwrap();
@@ -93,7 +93,7 @@ fn test_carbon_cycle() {
         .timeseries()
         .get_timeseries_by_name("Emissions|CO2|Anthropogenic")
         .unwrap();
-    let expected_concentrations: Vec<FloatValue> = time_axis
+    let _expected_concentrations: Vec<FloatValue> = time_axis
         .values()
         .iter()
         .map(|t| match *t < step_year {
