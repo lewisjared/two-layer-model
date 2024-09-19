@@ -241,9 +241,30 @@ class Model:
         Clone of the timeseries held by the model
         """
 
-    def to_json(self) -> str:
-        pass
+    def to_toml(self) -> str:
+        """
+        Serialise the current state of the model to a TOML string.
+
+        This string can be used to recreate the model at a later time using
+        `~Model.from_toml`.
+
+        Returns
+        -------
+        String representation of the model, including the state required to recreate
+        the model at a later time.
+        """
 
     @classmethod
-    def from_json(cls: type[T], serialised_model: str) -> T:
-        pass
+    def from_toml(cls: type[T], serialised_model: str) -> T:
+        """
+        Create a model from a TOML string.
+
+        Parameters
+        ----------
+        serialised_model
+            TOML string representing the model
+
+        Returns
+        -------
+        New model object with the state as defined in the TOML string.
+        """
