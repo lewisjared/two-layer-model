@@ -149,7 +149,11 @@ impl RequirementDefinition {
 /// * inputs: State information required to solve the model. This come from either other
 ///   components as part of a coupled system or from exogenous data.
 /// * outputs: Information that is solved by the component
-
+///
+/// Structs implementing the `Component` trait should be serializable and deserializable
+/// and use the `#[typetag::serde]` macro when implementing the trait to enable
+/// serialisation/deserialisation when using `Component` as an object trait
+/// (i.e. where `dyn Component` is used; see `models.rs`).
 #[typetag::serde(tag = "type")]
 pub trait Component: Debug + Send + Sync {
     fn definitions(&self) -> Vec<RequirementDefinition>;
