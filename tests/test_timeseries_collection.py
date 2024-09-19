@@ -7,7 +7,7 @@ class TestTimeseriesCollection:
         collection.add_timeseries("Test", timeseries, VariableType.Exogenous)
         collection.add_timeseries("Other", timeseries, VariableType.Endogenous)
 
-        assert repr(collection) == '<TimeseriesCollection names=["Test", "Other"]>'
+        assert repr(collection) == '<TimeseriesCollection names=["Other", "Test"]>'
 
     def test_timeseries(self, timeseries):
         collection = TimeseriesCollection()
