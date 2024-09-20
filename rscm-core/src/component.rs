@@ -2,6 +2,7 @@ use crate::errors::RSCMResult;
 use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
 use pyo3::pyclass;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
@@ -105,15 +106,16 @@ impl IntoIterator for InputState {
 pub type OutputState = InputState;
 
 #[pyclass]
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, Serialize, Deserialize)]
 pub enum RequirementType {
     Input,
     Output,
     InputAndOutput, // TODO: Figure out how to compose input and output together
+    EmptyLink,
 }
 
 #[pyclass]
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, Serialize, Deserialize)]
 pub struct RequirementDefinition {
     #[pyo3(get, set)]
     pub name: String,
@@ -147,8 +149,13 @@ impl RequirementDefinition {
 /// * inputs: State information required to solve the model. This come from either other
 ///   components as part of a coupled system or from exogenous data.
 /// * outputs: Information that is solved by the component
-
-pub trait Component: Debug {
+///
+/// Structs implementing the `Component` trait should be serializable and deserializable
+/// and use the `#[typetag::serde]` macro when implementing the trait to enable
+/// serialisation/deserialisation when using `Component` as an object trait
+/// (i.e. where `dyn Component` is used; see `models.rs`).
+#[typetag::serde(tag = "type")]
+pub trait Component: Debug + Send + Sync {
     fn definitions(&self) -> Vec<RequirementDefinition>;
 
     /// Variables that are required to solve this component

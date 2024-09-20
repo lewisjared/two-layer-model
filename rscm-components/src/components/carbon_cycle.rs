@@ -6,12 +6,12 @@ use rscm_core::component::{
 use rscm_core::errors::RSCMResult;
 use rscm_core::ivp::{get_last_step, IVPBuilder, IVP};
 use rscm_core::timeseries::{FloatValue, Time};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 type ModelState = Vector3<FloatValue>;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CarbonCycleParameters {
     /// Timescale of the box's response
     /// unit: yr
@@ -25,12 +25,12 @@ pub struct CarbonCycleParameters {
 }
 
 // TODO: Move this into core
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SolverOptions {
     pub step_size: FloatValue,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CarbonCycleComponent {
     parameters: CarbonCycleParameters,
     solver_options: SolverOptions,
@@ -52,6 +52,7 @@ impl CarbonCycleComponent {
     }
 }
 
+#[typetag::serde]
 impl Component for CarbonCycleComponent {
     fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![

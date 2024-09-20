@@ -10,6 +10,7 @@ use num::{Float, ToPrimitive};
 use numpy::ndarray::{ArrayBase, Data};
 use numpy::Ix1;
 pub use previous::PreviousStrategy;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 
 #[derive(PartialEq)]
@@ -149,5 +150,37 @@ impl From<PreviousStrategy> for InterpolationStrategy {
 impl Debug for InterpolationStrategy {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("InterpolationStrategy").finish()
+    }
+}
+
+impl Serialize for InterpolationStrategy {
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> Result<<S as serde::Serializer>::Ok, <S as serde::Serializer>::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            InterpolationStrategy::Linear(_) => serializer.serialize_str("Linear"),
+            InterpolationStrategy::Next(_) => serializer.serialize_str("Next"),
+            InterpolationStrategy::Previous(_) => serializer.serialize_str("Previous"),
+        }
+    }
+}
+impl<'de> Deserialize<'de> for InterpolationStrategy {
+    fn deserialize<D>(deserializer: D) -> Result<InterpolationStrategy, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        match s.as_str() {
+            "Linear" => Ok(InterpolationStrategy::Linear(LinearSplineStrategy::new(
+                true,
+            ))),
+            "Next" => Ok(InterpolationStrategy::Next(NextStrategy::new(true))),
+            "Previous" => Ok(InterpolationStrategy::Previous(PreviousStrategy::new(true))),
+            _ => Err(serde::de::Error::custom(format!("Unknown strategy: {}", s))),
+        }
     }
 }

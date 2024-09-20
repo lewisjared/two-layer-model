@@ -6,14 +6,14 @@ use crate::component::{
 use crate::errors::RSCMResult;
 use crate::timeseries::{FloatValue, Time};
 use crate::timeseries_collection::TimeseriesCollection;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct TestComponentParameters {
     pub p: FloatValue,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct TestComponent {
     parameters: TestComponentParameters,
 }
@@ -24,6 +24,7 @@ impl TestComponent {
     }
 }
 
+#[typetag::serde]
 impl Component for TestComponent {
     fn definitions(&self) -> Vec<RequirementDefinition> {
         vec![

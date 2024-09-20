@@ -9,7 +9,10 @@
 /// The model also holds all of the exogenous variables required by the model.
 /// The required variables are identified when building the model.
 /// If a required exogenous variable isn't provided, then the build step will fail.
-use crate::component::{Component, InputState, RequirementDefinition, State};
+use crate::component::{
+    Component, InputState, OutputState, RequirementDefinition, RequirementType, State,
+};
+use crate::errors::RSCMResult;
 use crate::interpolate::strategies::{InterpolationStrategy, LinearSplineStrategy};
 use crate::timeseries::{FloatValue, Time, TimeAxis, Timeseries};
 use crate::timeseries_collection::{TimeseriesCollection, VariableType};
@@ -18,11 +21,13 @@ use petgraph::dot::{Config, Dot};
 use petgraph::graph::NodeIndex;
 use petgraph::visit::{Bfs, IntoNeighbors, IntoNodeIdentifiers, Visitable};
 use petgraph::Graph;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::Index;
 use std::sync::Arc;
 
-type C = Arc<dyn Component + Send + Sync>;
+type C = Arc<dyn Component>;
+type CGraph = Graph<C, RequirementDefinition>;
 
 #[derive(Debug)]
 struct VariableDefinition {
@@ -36,6 +41,28 @@ impl VariableDefinition {
             name: definition.name.clone(),
             unit: definition.unit.clone(),
         }
+    }
+}
+
+/// A null component that does nothing
+///
+/// Used as an initial component to ensure that the model is connected
+#[derive(Debug, Serialize, Deserialize)]
+struct NullComponent {}
+
+#[typetag::serde]
+impl Component for NullComponent {
+    fn definitions(&self) -> Vec<RequirementDefinition> {
+        vec![]
+    }
+
+    fn solve(
+        &self,
+        _t_current: Time,
+        _t_next: Time,
+        input_state: &InputState,
+    ) -> RSCMResult<OutputState> {
+        Ok(OutputState::from(input_state.clone()))
     }
 }
 
@@ -170,14 +197,14 @@ impl ModelBuilder {
     /// Panics if the required data to build a model is not available.
     pub fn build(&self) -> Model {
         // todo: refactor once this is more stable
-        let mut graph: Graph<Option<C>, Option<RequirementDefinition>> = Graph::new();
+        let mut graph: CGraph = Graph::new();
         let mut endrogoneous: HashMap<String, NodeIndex> = HashMap::new();
         let mut exogenous: Vec<String> = vec![];
         let mut definitions: HashMap<String, VariableDefinition> = HashMap::new();
-        let initial_node = graph.add_node(Option::None);
+        let initial_node = graph.add_node(Arc::new(NullComponent {}));
 
         self.components.iter().for_each(|component| {
-            let node = graph.add_node(Option::from(component.clone()));
+            let node = graph.add_node(component.clone());
             let mut has_dependencies = false;
 
             let requires = component.inputs();
@@ -188,11 +215,7 @@ impl ModelBuilder {
 
                 if exogenous.contains(&requirement.name) {
                     // Link to the node that provides the requirement
-                    graph.add_edge(
-                        endrogoneous[&requirement.name],
-                        node,
-                        Option::from(requirement.clone()),
-                    );
+                    graph.add_edge(endrogoneous[&requirement.name], node, requirement.clone());
                     has_dependencies = true;
                 } else {
                     // Add a new variable that must be defined outside of the model
@@ -205,7 +228,11 @@ impl ModelBuilder {
                 // create a link to the initial node.
                 // This ensures that we have a single connected graph
                 // There might be smarter ways to iterate over the nodes, but this is fine for now
-                graph.add_edge(initial_node, node, None);
+                graph.add_edge(
+                    initial_node,
+                    node,
+                    RequirementDefinition::new("", "", RequirementType::EmptyLink),
+                );
             }
 
             provides.iter().for_each(|requirement| {
@@ -218,9 +245,7 @@ impl ModelBuilder {
                         endrogoneous.insert(requirement.name.clone(), node);
                     }
                     Some(node_index) => {
-                        println!("Duplicate definition of {:?} requirement", requirement.name);
-
-                        graph.add_edge(*node_index, node, Option::from(requirement.clone()));
+                        graph.add_edge(*node_index, node, requirement.clone());
                         endrogoneous.insert(requirement.name.clone(), node);
                     }
                 }
@@ -263,7 +288,7 @@ impl ModelBuilder {
                                 .interpolate_into(self.time_axis.clone()),
                             VariableType::Exogenous,
                         ),
-                        None => panic!("No exogenous data for {}", definition.name),
+                        None => println!("No exogenous data for {}", definition.name),
                     }
                 }
             } else {
@@ -305,13 +330,13 @@ impl Default for ModelBuilder {
 /// then a CO_2 concentration timeseries must be defined externally.
 /// If the model also contains a carbon cycle component which produced CO_2 concentrations,
 /// then the ERF component will be solved after the carbon cycle model.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Model {
     /// A directed graph with components as nodes and the edges defining the state dependencies
     /// between nodes.
     /// This graph is traversed on every time step to ensure that any state dependencies are
     /// solved before another component needs the state.
-    components: Graph<Option<C>, Option<RequirementDefinition>>,
+    components: CGraph,
     /// The base node of the graph from where to begin traversing.
     initial_node: NodeIndex,
     /// The model state
@@ -325,7 +350,7 @@ pub struct Model {
 
 impl Model {
     pub fn new(
-        components: Graph<Option<C>, Option<RequirementDefinition>>,
+        components: CGraph,
         initial_node: NodeIndex,
         collection: TimeseriesCollection,
         time_axis: Arc<TimeAxis>,
@@ -383,11 +408,7 @@ impl Model {
         let mut bfs = Bfs::new(&self.components, self.initial_node);
         while let Some(nx) = bfs.next(&self.components) {
             let c = self.components.index(nx);
-
-            if c.is_some() {
-                let c = c.as_ref().unwrap().clone();
-                self.step_model_component(c)
-            }
+            self.step_model_component(c.clone())
         }
     }
 
@@ -411,21 +432,12 @@ impl Model {
     /// Create a diagram the represents the component graph
     ///
     /// Useful for debugging
-    pub fn as_dot(&self) -> Dot<&Graph<Option<C>, Option<RequirementDefinition>>> {
+    pub fn as_dot(&self) -> Dot<&CGraph> {
         Dot::with_attr_getters(
             &self.components,
             &[Config::NodeNoLabel, Config::EdgeNoLabel],
-            &|_, er| {
-                let requirement = er.weight();
-                match requirement {
-                    None => "".to_string(),
-                    Some(r) => format!("label = {:?}", r.name),
-                }
-            },
-            &|_, (_, component)| match component {
-                None => "".to_string(),
-                Some(c) => format!("label = \"{:?}\"", c),
-            },
+            &|_, er| format!("label = {:?}", er.weight().name),
+            &|_, (_, component)| format!("label = \"{:?}\"", component),
         )
     }
 
@@ -444,8 +456,10 @@ mod tests {
     use super::*;
     use crate::example_components::{TestComponent, TestComponentParameters};
     use crate::interpolate::strategies::PreviousStrategy;
+    use is_close::is_close;
     use numpy::array;
     use numpy::ndarray::Array;
+    use std::iter::zip;
 
     fn get_emissions() -> Timeseries<FloatValue> {
         Timeseries::new(
@@ -504,14 +518,113 @@ mod tests {
             .with_exogenous_variable("Emissions|CO2", get_emissions())
             .build();
 
-        let exp = "digraph {
-    0 [ ]
-    1 [ label = \"TestComponent { parameters: TestComponentParameters { p: 0.5 } }\"]
-    0 -> 1 [ ]
+        let exp = r#"digraph {
+    0 [ label = "NullComponent"]
+    1 [ label = "TestComponent { parameters: TestComponentParameters { p: 0.5 } }"]
+    0 -> 1 [ label = ""]
 }
-";
+"#;
 
         let res = format!("{:?}", model.as_dot());
         assert_eq!(res, exp);
+    }
+
+    #[test]
+    fn serialise_and_deserialise_model() {
+        let mut model = ModelBuilder::new()
+            .with_time_axis(TimeAxis::from_values(Array::range(2020.0, 2025.0, 1.0)))
+            .with_component(Arc::new(TestComponent::from_parameters(
+                TestComponentParameters { p: 0.5 },
+            )))
+            .with_exogenous_variable("Emissions|CO2", get_emissions())
+            .build();
+
+        model.step();
+
+        let serialised = serde_json::to_string_pretty(&model).unwrap();
+        println!("{}", serialised);
+        let serialised = toml::to_string(&model).unwrap();
+
+        let expected = r#"initial_node = 0
+time_index = 1
+
+[components]
+node_holes = []
+edge_property = "directed"
+edges = [[0, 1, { name = "", unit = "", requirement_type = "EmptyLink" }]]
+
+[[components.nodes]]
+type = "NullComponent"
+
+[[components.nodes]]
+type = "TestComponent"
+
+[components.nodes.parameters]
+p = 0.5
+
+[[collection.timeseries]]
+name = "Concentrations|CO2"
+variable_type = "Endogenous"
+
+[collection.timeseries.timeseries]
+units = "ppm"
+latest = 1
+interpolation_strategy = "Linear"
+
+[collection.timeseries.timeseries.values]
+v = 1
+dim = [5]
+data = [nan, 0.65, nan, nan, nan]
+
+[collection.timeseries.timeseries.time_axis.bounds]
+v = 1
+dim = [6]
+data = [2020.0, 2021.0, 2022.0, 2023.0, 2024.0, 2025.0]
+
+[[collection.timeseries]]
+name = "Emissions|CO2"
+variable_type = "Exogenous"
+
+[collection.timeseries.timeseries]
+units = "GtC / yr"
+latest = 5
+interpolation_strategy = "Previous"
+
+[collection.timeseries.timeseries.values]
+v = 1
+dim = [5]
+data = [10.0, 10.0, 10.0, 10.0, 10.0]
+
+[collection.timeseries.timeseries.time_axis.bounds]
+v = 1
+dim = [6]
+data = [2020.0, 2021.0, 2022.0, 2023.0, 2024.0, 2025.0]
+
+[time_axis.bounds]
+v = 1
+dim = [6]
+data = [2020.0, 2021.0, 2022.0, 2023.0, 2024.0, 2025.0]
+"#;
+
+        assert_eq!(serialised, expected);
+
+        let deserialised = toml::from_str::<Model>(&serialised).unwrap();
+
+        assert!(zip(
+            model
+                .collection
+                .get_timeseries_by_name("Emissions|CO2")
+                .unwrap()
+                .values(),
+            deserialised
+                .collection
+                .get_timeseries_by_name("Emissions|CO2")
+                .unwrap()
+                .values()
+        )
+        .all(|(x0, x1)| { is_close!(*x0, *x1) || (x0.is_nan() && x0.is_nan()) }));
+
+        assert_eq!(model.current_time_bounds(), (2021.0, 2022.0));
+        assert_eq!(deserialised.current_time_bounds(), (2021.0, 2022.0));
     }
 }

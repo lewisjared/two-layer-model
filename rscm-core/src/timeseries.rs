@@ -5,6 +5,7 @@ use nalgebra::max;
 use num::{Float, ToPrimitive};
 use numpy::ndarray::prelude::*;
 use numpy::ndarray::{Array, Array1, ViewRepr};
+use serde::{Deserialize, Serialize};
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -18,7 +19,7 @@ pub type Time = f64;
 /// This is a placeholder to make it easier to be able to use a generic representation of value.
 pub type FloatValue = f64;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TimeAxis {
     bounds: Array1<Time>,
 }
@@ -189,7 +190,7 @@ impl TimeAxis {
 
 /// A contiguous set of values
 ///
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Timeseries<T>
 where
     T: Float,
@@ -396,6 +397,7 @@ where
 mod tests {
     use super::*;
     use crate::interpolate::strategies::{InterpolationStrategy, PreviousStrategy};
+    use is_close::is_close;
 
     #[test]
     #[should_panic]
@@ -438,5 +440,73 @@ mod tests {
             .with_interpolation_strategy(InterpolationStrategy::from(PreviousStrategy::new(true)));
         let result = timeseries.at_time(query).unwrap();
         assert_eq!(result, 2.0);
+    }
+
+    #[test]
+    fn serialise_and_deserialise_json() {
+        let data = array![1.0, 1.5, 2.0];
+        let years = Array::range(2020.0, 2023.0, 1.0);
+
+        let timeseries = Timeseries::from_values(data, years);
+
+        let serialised = serde_json::to_string(&timeseries).unwrap();
+        assert_eq!(
+            serialised,
+            r#"{"units":"","values":{"v":1,"dim":[3],"data":[1.0,1.5,2.0]},"time_axis":{"bounds":{"v":1,"dim":[4],"data":[2020.0,2021.0,2022.0,2023.0]}},"latest":3,"interpolation_strategy":"Linear"}"#
+        );
+
+        let deserialised = serde_json::from_str::<Timeseries<f64>>(&serialised).unwrap();
+
+        assert_eq!(timeseries.values(), deserialised.values());
+    }
+
+    #[test]
+    #[should_panic]
+    fn serialise_and_deserialise_with_nan_json() {
+        let data = array![1.0, 1.5, FloatValue::nan()];
+        let years = Array::range(2020.0, 2023.0, 1.0);
+
+        let timeseries = Timeseries::from_values(data, years);
+
+        let serialised = serde_json::to_string(&timeseries).unwrap();
+        assert_eq!(
+            serialised,
+            r#"{"units":"","values":{"v":1,"dim":[3],"data":[1.0,1.5,null]},"time_axis":{"bounds":{"v":1,"dim":[4],"data":[2020.0,2021.0,2022.0,2023.0]}},"latest":2,"interpolation_strategy":"Linear"}"#
+        );
+
+        // This panics as it can't handle null -> NaN values
+        serde_json::from_str::<Timeseries<f64>>(&serialised).unwrap();
+    }
+
+    #[test]
+    fn serialise_and_deserialise_with_nan_toml() {
+        let data = array![1.0, 1.5, FloatValue::nan()];
+        let years = Array::range(2020.0, 2023.0, 1.0);
+
+        let timeseries = Timeseries::from_values(data, years);
+
+        let serialised = toml::to_string(&timeseries).unwrap();
+
+        let expected = "units = \"\"
+latest = 2
+interpolation_strategy = \"Linear\"
+
+[values]
+v = 1
+dim = [3]
+data = [1.0, 1.5, nan]
+
+[time_axis.bounds]
+v = 1
+dim = [4]
+data = [2020.0, 2021.0, 2022.0, 2023.0]
+";
+
+        assert_eq!(serialised, expected);
+
+        let deserialised = toml::from_str::<Timeseries<f64>>(&serialised).unwrap();
+
+        assert!(zip(timeseries.values(), deserialised.values())
+            .all(|(x0, x1)| { is_close!(*x0, *x1) || (x0.is_nan() && x0.is_nan()) }))
     }
 }
