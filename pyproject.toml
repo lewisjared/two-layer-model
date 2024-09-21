@@ -32,6 +32,7 @@ dev-dependencies = [
     "seaborn>=0.13.2",
     "matplotlib>=3.9.2",
     "pydot>=3.0.1",
+    "towncrier>=24.8.0",
     "bump-my-version>=0.26.1",
 ]
 
@@ -102,6 +103,28 @@ known-first-party = ["src"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.towncrier]
+package = "two_layer_model"
+package_dir = "src"
+filename = "docs/changelog.md"
+directory = "changelog/"
+title_format = "## two_layer_model {version} ({project_date})"
+underlines = [
+    "",
+    "",
+    "",
+]
+issue_format = "[#{issue}](https://github.com/lewisjarednz/two_layer_model/pulls/{issue})"
+type = [
+    { directory = "breaking", name = "⚠️ Breaking Changes", showcontent = true },
+    { directory = "deprecation", name = "🗑️ Deprecations", showcontent = true },
+    { directory = "feature", name = "🆕 Features", showcontent = true },
+    { directory = "improvement", name = "🎉 Improvements", showcontent = true },
+    { directory = "fix", name = "🐛 Bug Fixes", showcontent = true },
+    { directory = "docs", name = "📚 Improved Documentation", showcontent = true },
+    { directory = "trivial", name = "🔧 Trivial/Internal Changes", showcontent = false },
+]
 
 [tool.bumpversion]
 current_version = "0.1.0"

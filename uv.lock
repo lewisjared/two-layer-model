@@ -2266,6 +2266,20 @@ wheels = [
 ]
 
 [[package]]
+name = "towncrier"
+version = "24.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "jinja2" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/69/d7/a5183f788cf4fabf03f7c767ae0b968249b0c737eb64b4d87a07ae01fea7/towncrier-24.8.0.tar.gz", hash = "sha256:013423ee7eed102b2f393c287d22d95f66f1a3ea10a4baa82d298001a7f18af3", size = 61635 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/93/1b/2f7b88506e22d9798c139261af4946865c0787cfa345514ca3c70173a9cc/towncrier-24.8.0-py3-none-any.whl", hash = "sha256:9343209592b839209cdf28c339ba45792fbfe9775b5f9c177462fd693e127d8d", size = 56981 },
+]
+
+[[package]]
 name = "tqdm"
 version = "4.66.5"
 source = { registry = "https://pypi.org/simple" }
@@ -2306,6 +2320,7 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
     { name = "seaborn" },
+    { name = "towncrier" },
 ]
 
 [package.metadata]
@@ -2325,6 +2340,7 @@ dev = [
     { name = "pytest", specifier = ">=8.3.2" },
     { name = "ruff", specifier = ">=0.6.2" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "towncrier", specifier = ">=24.8.0" },
 ]
 
 [[package]]
