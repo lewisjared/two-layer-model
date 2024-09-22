@@ -14,6 +14,7 @@ create_component_builder!(
 #[pymodule]
 #[pyo3(name = "_lib")]
 fn rscm(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_wrapped(wrap_pymodule!(core))?;
     m.add_wrapped(wrap_pymodule!(components))?;
     m.add_class::<TwoLayerComponentBuilder>()?;

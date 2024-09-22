@@ -3,4 +3,6 @@
 # implementation of the automatic generation of .pyi files from rust
 from .core import ComponentBuilder
 
+__version__: str
+
 class TwoLayerComponentBuilder(ComponentBuilder): ...
