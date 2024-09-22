@@ -18,16 +18,10 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/checkout@v4
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Install poetry
-        uses: abatilo/actions-poetry@v2
       - name: Add version to environment
         run: |
-          poetry install --all-extras
-          PROJECT_VERSION=$(poetry version --short)
+          make virtual-environment
+          PROJECT_VERSION=$(python -c 'import rscm; print(rscm.__version__)')
           echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
       - name: Build package
         run: |
@@ -42,5 +36,5 @@ jobs:
           token: "${{ secrets.PAT }}"
           draft: true
           files: |
-            dist/{{ project_name_python }}-${{ env.PROJECT_VERSION }}-py3-none-any.whl
-            dist/{{ project_name_python }}-${{ env.PROJECT_VERSION }}.tar.gz
+            dist/rscm-${{ env.PROJECT_VERSION }}-py3-none-any.whl
+            dist/rscm-${{ env.PROJECT_VERSION }}.tar.gz

@@ -5,14 +5,11 @@ on:
     inputs:
       bump_rule:
         type: choice
-        description: How to bump the project's version (see https://python-poetry.org/docs/cli/#version)
+        description: How to bump the project's version
         options:
           - patch
           - minor
           - major
-          - prepatch
-          - preminor
-          - premajor
           - prerelease
         required: true
 
@@ -22,7 +19,7 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, 'bump:')"
     runs-on: ubuntu-latest
     env:
-      CI_COMMIT_EMAIL: "ci-runner@openmethane.invalid"
+      CI_COMMIT_EMAIL: "ci-runner@rscm.invalid"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -34,17 +31,21 @@ jobs:
       # install the package (to keep things slim, we only install the main
       # dependencies, which also means that we get a test that we can import
       # the package with only the compulsory dependencies installed for free)
-      - name: Install Python
-        uses: actions/setup-python@v4
-      - name: Install poetry
-        uses: abatilo/actions-poetry@v2
-      - name: Add version to environment
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          allow-prereleases: true
+      - name: Set up uv
+        # Install latest uv version using the installer
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install the project
         run: |
-          poetry install --only main
+          uv sync --no-dev
 
       - name: Install towncrier
         run: |
-          poetry run pip install towncrier
+          uv run pip install towncrier
 
       - name: Create bump and changelog
 
@@ -53,17 +54,12 @@ jobs:
           git config --global user.email "$CI_COMMIT_EMAIL"
 
           # Bump
-          BASE_VERSION=`poetry version -s`
-          NEW_VERSION=`poetry version -s ${{ github.event.inputs.bump_rule }}`
-          echo "Bumping version $BASE_VERSION > $NEW_VERSION"
-          poetry run towncrier build --yes --version v$NEW_VERSION
-          git commit -a -m "bump: version $BASE_VERSION -> $NEW_VERSION"
-          git tag v$NEW_VERSION
+          uv run bump-my-version bump ${{ github.event.inputs.bump_rule }} -vv --tag --commit
 
           # Bump to alpha (so that future commits do not have the same
           # version as the tagged commit)
-          BASE_VERSION=`poetry version -s`
-          NEW_VERSION=`poetry version -s prerelease`
-          echo "Bumping version $BASE_VERSION > $NEW_VERSION"
-          git commit -a -m "bump(pre-release): version $BASE_VERSION > $NEW_VERSION"
-          git push && git push --tags
+#          BASE_VERSION=`poetry version -s`
+#          NEW_VERSION=`poetry version -s prerelease`
+#          echo "Bumping version $BASE_VERSION > $NEW_VERSION"
+#          git commit -a -m "bump(pre-release): version $BASE_VERSION > $NEW_VERSION"
+#          git push && git push --tags
