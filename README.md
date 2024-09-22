@@ -1,13 +1,13 @@
-# Two Layer Model
+# Rust Simple Climate Model (RSCM)
 
-An over-engineered approach to the two layer model implemented using Rust.
-This is intended as a PoC of the use of Rust for simple climate models and general testing.
+This is intended as a PoC of the use of Rust for simple climate models.
+The aim is to provide a framework for building components in both Rust and Python.
 
 ## Design goals
 
 * Fast
 * Easy to extend
-* Understandable by non-rust developers
+* Understandable by non-Rust developers
 * Can be driven from Python
 
 ## Getting Started

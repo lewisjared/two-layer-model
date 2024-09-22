@@ -13,13 +13,13 @@ create_component_builder!(
 
 #[pymodule]
 #[pyo3(name = "_lib")]
-fn two_layer_model(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn rscm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(core))?;
     m.add_wrapped(wrap_pymodule!(components))?;
     m.add_class::<TwoLayerComponentBuilder>()?;
 
-    set_path(m, "two_layer_model._lib.core", "core")?;
-    set_path(m, "two_layer_model._lib.components", "components")?;
+    set_path(m, "rscm._lib.core", "core")?;
+    set_path(m, "rscm._lib.components", "components")?;
 
     Ok(())
 }

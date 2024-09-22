@@ -4,8 +4,8 @@ Common model builders
 
 import numpy as np
 
-from two_layer_model.components import CarbonCycleBuilder, CO2ERFBuilder
-from two_layer_model.core import (
+from rscm.components import CarbonCycleBuilder, CO2ERFBuilder
+from rscm.core import (
     InterpolationStrategy,
     ModelBuilder,
     TimeAxis,

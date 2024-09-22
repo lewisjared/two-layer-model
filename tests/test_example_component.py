@@ -1,7 +1,7 @@
 import pytest
 
-from two_layer_model._lib.core import TestComponentBuilder
-from two_layer_model.core import PythonComponent, RequirementDefinition
+from rscm._lib.core import TestComponentBuilder
+from rscm.core import PythonComponent, RequirementDefinition
 
 
 class ExamplePythonComponent:

@@ -33,9 +33,9 @@ import pandas as pd
 import pydot
 import scmdata
 
-from two_layer_model._lib.core import TimeseriesCollection
-from two_layer_model.components import CarbonCycleBuilder, CO2ERFBuilder
-from two_layer_model.core import (
+from rscm._lib.core import TimeseriesCollection
+from rscm.components import CarbonCycleBuilder, CO2ERFBuilder
+from rscm.core import (
     InterpolationStrategy,
     ModelBuilder,
     TimeAxis,

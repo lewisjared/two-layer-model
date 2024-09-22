@@ -113,6 +113,8 @@ class RequirementDefinition:
     units: str
     requirement_type: RequirementType
 
+    def __init__(self, name: str, units: str, requirement_type: RequirementType): ...
+
 class Component(Protocol):
     """A component of the model that can be solved"""
 

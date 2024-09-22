@@ -1,4 +1,4 @@
-from two_layer_model.core import TimeseriesCollection, VariableType
+from rscm.core import TimeseriesCollection, VariableType
 
 
 class TestTimeseriesCollection:

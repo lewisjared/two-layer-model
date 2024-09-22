@@ -24,7 +24,7 @@
 # %%
 from helpers.models import example_model_builder
 
-from two_layer_model._lib.core import Model
+from rscm._lib.core import Model
 
 # %%
 # Create a simple example coupled model with some exogenous data

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from two_layer_model._lib.core import InterpolationStrategy, TimeAxis, Timeseries
+from rscm._lib.core import InterpolationStrategy, TimeAxis, Timeseries
 
 
 @pytest.fixture()

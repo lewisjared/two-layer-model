@@ -2,7 +2,7 @@
 Core classes and functions for Rust Simple Climate Models (RSCMs)
 """
 
-from two_layer_model._lib.core import (
+from rscm._lib.core import (
     InterpolationStrategy,
     Model,
     ModelBuilder,

@@ -13,17 +13,18 @@ virtual-environment:
 
 .PHONY: build-dev
 build-dev:
-	@rm -f python/two_layer_model/*.so
+	@rm -f python/rscm/*.so
 	uv run maturin develop
 
 .PHONY: build-prod
 build-prod:
-	@rm -f python/two_layer_model/*.so
+	@rm -f python/rscm/*.so
 	uv run maturin develop --release
 
 .PHONY: format
 format:
 	uv run ruff check --fix
+
 	uv run ruff format
 	cargo fmt
 
@@ -70,4 +71,4 @@ clean:
 	rm -f .coverage.*
 	rm -rf build
 	rm -rf perf.data*
-	rm -rf python/two_layer_model/*.so
+	rm -rf python/rscm/*.so

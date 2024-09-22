@@ -455,6 +455,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "rscm"
+version = "0.1.0"
+dependencies = [
+ "ndarray",
+ "numpy",
+ "ode_solvers",
+ "pyo3",
+ "pyo3-build-config",
+ "pythonize",
+ "rscm-components",
+ "rscm-core",
+ "serde",
+ "typetag",
+]
+
+[[package]]
 name = "rscm-components"
 version = "0.1.0"
 dependencies = [
@@ -644,22 +660,6 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "winnow",
-]
-
-[[package]]
-name = "two-layer-model"
-version = "0.1.0"
-dependencies = [
- "ndarray",
- "numpy",
- "ode_solvers",
- "pyo3",
- "pyo3-build-config",
- "pythonize",
- "rscm-components",
- "rscm-core",
- "serde",
- "typetag",
 ]
 
 [[package]]
