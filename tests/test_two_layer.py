@@ -1,4 +1,4 @@
-from two_layer_model import TwoLayerComponentBuilder
+from rscm import TwoLayerComponentBuilder
 
 
 def test_create_component():

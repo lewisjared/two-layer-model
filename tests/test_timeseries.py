@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from two_layer_model.core import InterpolationStrategy, TimeAxis, Timeseries
+from rscm.core import InterpolationStrategy, TimeAxis, Timeseries
 
 
 class TestTimeAxis:

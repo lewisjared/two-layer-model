@@ -1,9 +1,9 @@
 import numpy as np
 import numpy.testing as npt
 
-from two_layer_model._lib import TwoLayerComponentBuilder
-from two_layer_model._lib.core import InterpolationStrategy, Model, Timeseries
-from two_layer_model.core import ModelBuilder
+from rscm._lib import TwoLayerComponentBuilder
+from rscm._lib.core import InterpolationStrategy, Model, Timeseries
+from rscm.core import ModelBuilder
 
 
 def test_model(time_axis):

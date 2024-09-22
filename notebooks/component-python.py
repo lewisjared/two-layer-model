@@ -24,7 +24,7 @@ import attrs
 import matplotlib.pyplot as plt
 import numpy as np
 
-from two_layer_model.core import (
+from rscm.core import (
     InterpolationStrategy,
     ModelBuilder,
     PythonComponent,
@@ -36,7 +36,7 @@ from two_layer_model.core import (
 
 # %% [markdown]
 # A python-based component must conform with the
-# `two_layer_model._lib.core.CustomComponent` protocol.
+# `rscm._lib.core.CustomComponent` protocol.
 # This protocol defines two required functions:
 # * definitions
 # * solve
@@ -51,7 +51,7 @@ class ScaleComponent:
     Example of a custom Python component.
 
     This component must conform with the
-    `two_layer_model._lib.core.CustomComponent` protocol.
+    `rscm._lib.core.CustomComponent` protocol.
     """
 
     scale_factor: float

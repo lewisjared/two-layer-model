@@ -59,7 +59,7 @@
 ///
 /// ```py
 /// import numpy as np
-/// from two_layer_model.core import TimeseriesCollection, Timeseries, InterpolationStrategy, VariableType
+/// from rscm.core import TimeseriesCollection, Timeseries, InterpolationStrategy, VariableType
 ///
 /// collection = TimeseriesCollection()
 /// timeseries = Timeseries(np.arange(2000.0, 2010.0), np.arange(2000.0, 2010.0), "units", InterpolationStrategy.Linear)
