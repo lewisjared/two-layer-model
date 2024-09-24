@@ -1,3 +1,14 @@
+[project]
+name = "rscm"
+version = "0.1.0"
+description = "Simple Climate Model framework implemented in Rust"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scmdata>=0.17.0",
+]
+
 [build-system]
 requires = [
     'maturin>=1,<2'
@@ -10,17 +21,6 @@ module-name = "rscm._lib"
 bindings = 'pyo3'
 features = ["pyo3/extension-module"]
 
-[project]
-name = "rscm"
-version = "0.1.0"
-description = "Two layer model implemented in Rust"
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-    "numpy",
-    "scmdata>=0.17.0",
-]
-
 
 [tool.uv]
 dev-dependencies = [
@@ -32,6 +32,7 @@ dev-dependencies = [
     "seaborn>=0.13.2",
     "matplotlib>=3.9.2",
     "pydot>=3.0.1",
+    "towncrier>=24.8.0",
     "bump-my-version>=0.26.1",
 ]
 
@@ -103,6 +104,28 @@ known-first-party = ["src"]
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
+[tool.towncrier]
+package = "rscm"
+package_dir = "src"
+filename = "docs/changelog.md"
+directory = "changelog/"
+title_format = "## rscm {version} ({project_date})"
+underlines = [
+    "",
+    "",
+    "",
+]
+issue_format = "[#{issue}](https://github.com/lewisjared/rscm/pulls/{issue})"
+type = [
+    { directory = "breaking", name = "⚠️ Breaking Changes", showcontent = true },
+    { directory = "deprecation", name = "🗑️ Deprecations", showcontent = true },
+    { directory = "feature", name = "🆕 Features", showcontent = true },
+    { directory = "improvement", name = "🎉 Improvements", showcontent = true },
+    { directory = "fix", name = "🐛 Bug Fixes", showcontent = true },
+    { directory = "docs", name = "📚 Improved Documentation", showcontent = true },
+    { directory = "trivial", name = "🔧 Trivial/Internal Changes", showcontent = false },
+]
+
 [tool.bumpversion]
 current_version = "0.1.0"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
@@ -119,6 +142,10 @@ allow_dirty = false
 commit = false
 message = "chore: release {current_version} → {new_version}"
 commit_args = ""
+pre_commit_hooks = ["uv run towncrier build --yes"]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
 
 [[tool.bumpversion.files]]
 filename = "cargo.toml"

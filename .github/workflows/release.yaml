@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  draft-release:
+    name: Create draft release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add version to environment
+        run: |
+          make virtual-environment
+          PROJECT_VERSION=$(python -c 'import rscm; print(rscm.__version__)')
+          echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
+      - name: Build package
+        run: |
+          uv build
+      - name: Generate Release Notes
+        run: |
+          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty='format:* %h %s' --no-merges >> ".github/release_template.md"
+      - name: Create Release Draft
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: ".github/release_template.md"
+          token: "${{ secrets.PAT }}"
+          draft: true
+          files: |
+            dist/rscm-${{ env.PROJECT_VERSION }}-*.whl
+            dist/rscm-${{ env.PROJECT_VERSION }}.tar.gz
