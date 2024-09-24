@@ -25,11 +25,11 @@ jobs:
       # Install UV + Python
       - name: Install uv
         uses: astral-sh/setup-uv@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
       # Install and build the project
       - name: Add version to environment
         run: |
