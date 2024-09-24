@@ -54,11 +54,11 @@ jobs:
 
           # Bump
           uv run bump-my-version bump ${{ github.event.inputs.bump_rule }} -vv --tag --commit
+          git push && git push --tags
 
-          # Bump to alpha (so that future commits do not have the same
-          # version as the tagged commit)
+# Bump to alpha (so that future commits do not have the same
+# version as the tagged commit)
 #          BASE_VERSION=`poetry version -s`
 #          NEW_VERSION=`poetry version -s prerelease`
 #          echo "Bumping version $BASE_VERSION > $NEW_VERSION"
 #          git commit -a -m "bump(pre-release): version $BASE_VERSION > $NEW_VERSION"
-#          git push && git push --tags
