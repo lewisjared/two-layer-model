@@ -31,14 +31,13 @@ jobs:
       # install the package (to keep things slim, we only install the main
       # dependencies, which also means that we get a test that we can import
       # the package with only the compulsory dependencies installed for free)
-      - name: Set up python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
         with:
-          python-version: '3.12'
-          allow-prereleases: true
-      - name: Set up uv
-        # Install latest uv version using the installer
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        run: uv python install 3.12
       - name: Install the project
         run: |
           uv sync --no-dev

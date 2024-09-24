@@ -117,13 +117,13 @@ underlines = [
 ]
 issue_format = "[#{issue}](https://github.com/lewisjared/rscm/pulls/{issue})"
 type = [
-    { directory = "breaking", name = "⚠️ Breaking Changes", showcontent = true },
-    { directory = "deprecation", name = "🗑️ Deprecations", showcontent = true },
-    { directory = "feature", name = "🆕 Features", showcontent = true },
-    { directory = "improvement", name = "🎉 Improvements", showcontent = true },
-    { directory = "fix", name = "🐛 Bug Fixes", showcontent = true },
-    { directory = "docs", name = "📚 Improved Documentation", showcontent = true },
-    { directory = "trivial", name = "🔧 Trivial/Internal Changes", showcontent = false },
+    { directory = "breaking", name = "⚠️ Breaking Changes ⚠️", showcontent = true },
+    { directory = "deprecation", name = "Deprecations", showcontent = true },
+    { directory = "feature", name = "Features", showcontent = true },
+    { directory = "improvement", name = "Improvements", showcontent = true },
+    { directory = "fix", name = "Bug Fixes", showcontent = true },
+    { directory = "docs", name = "Improved Documentation", showcontent = true },
+    { directory = "trivial", name = "Trivial/Internal Changes", showcontent = false },
 ]
 
 [tool.bumpversion]
@@ -148,10 +148,10 @@ pre_commit_hooks = ["uv run towncrier build --yes"]
 filename = "pyproject.toml"
 
 [[tool.bumpversion.files]]
-filename = "cargo.toml"
+filename = "Cargo.toml"
 
 [[tool.bumpversion.files]]
-filename = "rscm-core/cargo.toml"
+filename = "rscm-core/Cargo.toml"
 
 [[tool.bumpversion.files]]
-filename = "rscm-core/cargo.toml"
+filename = "rscm-core/Cargo.toml"
