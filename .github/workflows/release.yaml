@@ -17,7 +17,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/checkout@v4
       - name: Add version to environment
         run: |
           make virtual-environment
@@ -25,7 +24,7 @@ jobs:
           echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
       - name: Build package
         run: |
-          poetry build --no-interaction
+          uv build
       - name: Generate Release Notes
         run: |
           git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty='format:* %h %s' --no-merges >> ".github/release_template.md"
@@ -36,5 +35,5 @@ jobs:
           token: "${{ secrets.PAT }}"
           draft: true
           files: |
-            dist/rscm-${{ env.PROJECT_VERSION }}-py3-none-any.whl
+            dist/rscm-${{ env.PROJECT_VERSION }}-*.whl
             dist/rscm-${{ env.PROJECT_VERSION }}.tar.gz
