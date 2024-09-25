@@ -9,4 +9,5 @@ Add this to your `Cargo.toml`
 
 ```toml
 [dependencies]
-rscm-component = "0.7"
+rscm-component = "0.1"
+```

@@ -72,3 +72,7 @@ clean:
 	rm -rf build
 	rm -rf perf.data*
 	rm -rf python/rscm/*.so
+
+.phony: docs-rust
+docs-rust:  # Build Rust documentation
+	RUSTDOCFLAGS="--html-in-header ./assets/katex-header.html" cargo doc --no-deps --workspace

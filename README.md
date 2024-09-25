@@ -42,3 +42,12 @@ These tests can be built and run using the following (or using RustRover):
 ```
 cargo test
 ```
+
+
+### Documentation
+
+The documentation for the Rust codebase can be built using:
+
+```
+make docs-rust
+```
