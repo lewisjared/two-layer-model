@@ -32,4 +32,4 @@ members = ["rscm-core", "rscm-components"]
 pyo3-build-config = "*"
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "../assets/katex-header.html" ]
+rustdoc-args = [ "--html-in-header", "assets/katex-header.html" ]
