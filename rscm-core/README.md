@@ -11,4 +11,5 @@ Add this to your `Cargo.toml`
 
 ```toml
 [dependencies]
-rscm-core = "0.7"
+rscm-core = "0.1"
+```
