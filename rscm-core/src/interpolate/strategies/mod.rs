@@ -92,7 +92,7 @@ where
     Ay: Data,
 {
     /// Interpolate the value at a given time
-    /// This is used internally by [`Interp1D`].
+    /// This is used internally by [crate::interpolate::Interp1d].
     fn interpolate(
         &self,
         time: &ArrayBase<At, Ix1>,

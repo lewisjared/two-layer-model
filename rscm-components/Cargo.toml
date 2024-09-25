@@ -24,3 +24,6 @@ features = ["abi3-py38", "multiple-pymethods"]
 [dev-dependencies]
 rstest = "0.22.0"
 approx = "0.5.1"
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "../assets/katex-header.html" ]

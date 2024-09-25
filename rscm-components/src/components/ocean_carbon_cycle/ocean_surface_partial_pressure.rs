@@ -9,34 +9,104 @@ use rscm_core::timeseries::{FloatValue, Time};
 use serde::{Deserialize, Serialize};
 use std::iter::zip;
 
+/// Parameters for the Ocean Surface Partial Pressure component
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OceanSurfacePartialPressureParameters {
-    /// Pre-industrial ocean surface partial pressure [ppm]
-    ospp_preindustrial: f64,
+    /// Pre-industrial ocean surface partial pressure
+    /// Units: `ppm`
+    pub ospp_preindustrial: f64,
     /// Sensitivity of the ocean surface's partial pressure to changes in sea
-    /// surface temperature relative to pre-industrial [1 / delta_degC]
-    sensitivity_ospp_to_temperature: f64,
+    /// surface temperature relative to pre-industrial
+    /// Units: `1 / delta_degC`
+    pub sensitivity_ospp_to_temperature: f64,
 
-    /// Pre-industrial sea surface temperature [degC]
-    sea_surface_temperature_preindustrial: f64,
+    /// Pre-industrial sea surface temperature
+    /// Units: `degC`
+    pub sea_surface_temperature_preindustrial: f64,
 
     /// Vector of length 5 of offsets to be used when calculating the change in
-    /// ocean surface partial pressure [ppm]
-    delta_ospp_offsets: [f64; 5],
+    /// ocean surface partial pressure
+    /// Units: `ppm`
+    pub delta_ospp_offsets: [f64; 5],
     /// Vector of length 5 of coefficients (applied to pre-industrial sea surface temperatures)
     /// to be used when calculating the change in
-    /// ocean surface partial pressure [ppm / delta_degC]
-    delta_ospp_coefficients: [f64; 5],
+    /// ocean surface partial pressure
+    ///
+    /// Units: `ppm / delta_degC`
+    pub delta_ospp_coefficients: [f64; 5],
 }
 
-/// See docs in level
+/// Calculate partial pressure of |CO2| at the ocean's surface
+///
+/// # Requirements
+/// delta_sea_surface_temperature
+///    Change in sea surface temperature relative to pre-industrial
+///    Units: `delta_degC`
+///
+/// delta_dissolved_inorganic_carbon
+///    Change in dissolved inorganic carbon relative to pre-industrial
+///    Units: `micromol / kg`
+///
+/// Returns
+/// -------
+/// Partial pressure of |CO2| at the ocean's surface \[ppm\]
+///
+/// Notes
+/// -----
+/// Eq. A24 and A25 of [`joos_et_al_2001_feedbacks`]
+///
+/// ```math
+///
+///     \text{CO}_{2_s} = [
+///         p\text{CO}_{2_{s_0}}
+///         + \delta p \text{CO}_{2_s}
+///     ] \exp (\alpha \Delta T) \\
+///
+///     \delta p \text{CO}_{2_s} =
+///         (\vec{\beta} + T_0 \vec{\gamma})
+///         \cdot \vec{\Sigma} \\
+///
+///     \vec{\Sigma} = \begin{pmatrix}
+///         \Delta \Sigma \text{CO}_2
+///         & (\Delta \Sigma \text{CO}_2)^2 \times 10^{-3}
+///         & -(\Delta \Sigma \text{CO}_2)^3 \times 10^{-5}
+///         & (\Delta \Sigma \text{CO}_2)^4 \times 10^{-7}
+///         & -(\Delta \Sigma \text{CO}_2)^5 \times 10^{-10}
+///     \end{pmatrix}
+/// ```
+///
+/// and e.g.
+///
+/// ```math
+///     \vec{\beta} = \begin{pmatrix}
+///         1.5568
+///         & 7.4706
+///         & 1.2748
+///         & 2.4491
+///         & 1.5468
+///     \end{pmatrix} \\
+///
+///     \vec{\gamma} = \begin{pmatrix}
+///         -0.013993
+///         & -0.20207
+///         & -0.12015
+///         & -0.12639
+///         & -0.15326
+///     \end{pmatrix}
+/// ```
+///
+/// Is there a typo in Joos et al., 2001? Should it be
+/// (1.5568 - 1.3993 T_0) * 10 ** -2 rather than (1.5568 - 1.3993 T_0 * 10 ** -2) ?
+/// The former would make more sense given the brackets in the lines below in the paper. (#208)
+///
+/// [`joos_et_al_2001_feedbacks`]: https://doi.org/10.1029/2000GB001375
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OceanSurfacePartialPressure {
     parameters: OceanSurfacePartialPressureParameters,
 }
 
 impl OceanSurfacePartialPressure {
-    fn from_parameters(parameters: OceanSurfacePartialPressureParameters) -> Self {
+    pub fn from_parameters(parameters: OceanSurfacePartialPressureParameters) -> Self {
         Self { parameters }
     }
 
