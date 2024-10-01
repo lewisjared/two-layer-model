@@ -22,7 +22,7 @@ version = "0.21.0"
 features = ["abi3-py38", "multiple-pymethods"]
 
 [dev-dependencies]
-rstest = "0.22.0"
+rstest = "0.23.0"
 approx = "0.5.1"
 
 [package.metadata.docs.rs]
